@@ -223,3 +223,63 @@ This header file defines a specialized singly-linked list implementation optimiz
 ### splice.h
 
 This header file defines the interface for zero-copy data transfer operations in io_uring, focusing on efficient data movement between file descriptors. It declares structures and functions for managing pipe operations, direct file-to-file transfers, and sophisticated buffer management. The interface includes specialized handling for different types of file descriptors, completion tracking mechanisms, and optimization strategies for various transfer patterns.
+
+## sqpoll.c
+The file sqpoll.c is part of the `io_uring` subsystem in the Linux kernel and implements the submission queue polling (SQPOLL) feature. SQPOLL offloads the task of monitoring the submission queue (SQ) to a dedicated kernel thread, reducing latency by avoiding frequent system calls. This file manages the lifecycle of the SQPOLL thread, including creating, parking, unparking, and stopping it. It defines functions to handle submission queue events, manage CPU affinity for the polling thread, and ensure efficient processing of I/O requests. By continuously polling the SQ, this feature improves performance for high-throughput and low-latency workloads.
+
+## sqpoll.h
+The file sqpoll.h is a header file for managing the submission queue polling (SQPOLL) feature in the `io_uring` subsystem of the Linux kernel. It defines the `io_sq_data` structure, which holds information about the polling thread, including references (`refs`), synchronization primitives (`lock`, `wait`, `exited`), and metadata like CPU affinity (`sq_cpu`) and thread identifiers (`task_pid`, `task_tgid`). The structure also tracks contexts using the polling thread (`ctx_list`) and the thread's state (`state`, `work_time`, `sq_thread_idle`). 
+
+## statx.c
+The file statx.c is part of the `io_uring` subsystem in the Linux kernel and implements support for handling asynchronous `statx` system calls. The `statx` system call retrieves detailed file metadata, such as size, permissions, and timestamps. This file defines the `io_statx` structure, which stores information about a `statx` request, including the file descriptor (`dfd`), mask (`mask`), flags (`flags`), filename (`filename`), and the user-space buffer (`buffer`) where the metadata will be stored. It also provides key functions to process these requests. 
+
+## statx.h
+The file statx.h is a header file for the `statx` functionality in the `io_uring` subsystem of the Linux kernel. It declares three key functions used in handling asynchronous `statx` system calls. The `io_statx_prep` function prepares a `statx` request by validating and setting up the necessary parameters. The `io_statx` function executes the `statx` operation to retrieve file metadata, such as size and permissions. Finally, the `io_statx_cleanup` function handles cleanup after the operation, releasing any allocated resources. This header file provides the function prototypes needed to integrate `statx` support into `io_uring`.
+
+## sync.c
+The file sync.c is part of the `io_uring` subsystem in the Linux kernel and implements support for file synchronization operations, such as `sync_file_range`, `fsync`, and `fallocate`. It defines the `io_sync` structure, which stores information about these operations, including the file, offset (`off`), length (`len`), flags, and mode. The file provides functions to prepare and execute these operations asynchronously. 
+
+## sync.h
+The file sync.h is a header file for the `sync.c` implementation in the `io_uring` subsystem of the Linux kernel. It declares function prototypes for handling file synchronization operations, such as `sync_file_range`, `fsync`, and `fallocate`. These functions include preparation functions like `io_sfr_prep`, `io_fsync_prep`, and `io_fallocate_prep`, which validate and set up requests, as well as execution functions like `io_sync_file_range`, `io_fsync`, and `io_fallocate`, which perform the actual operations. 
+
+## tctx.c
+The file tctx.c is part of the `io_uring` subsystem in the Linux kernel and manages task-specific contexts for `io_uring`. It provides functionality to allocate, initialize, and clean up task contexts (`io_uring_task`) that store per-task data related to `io_uring` operations.
+
+## tctx.h
+The file tctx.h is a header file for managing task-specific contexts in the `io_uring` subsystem of the Linux kernel. It defines the `io_tctx_node` structure, which links a task to an `io_uring` context, and declares functions for allocating, cleaning up, and managing these task contexts. 
+
+## timeout.c
+The file timeout.c is part of the `io_uring` subsystem in the Linux kernel and handles timeout operations for asynchronous I/O requests. It defines structures like `io_timeout` to manage timeout-related data, such as the timeout duration, sequence numbers, and linked requests. The file provides functions to prepare, execute, and manage timeouts, including `io_timeout_prep` for setting up timeout requests, `io_timeout` for executing them, and `io_timeout_cancel` for canceling active timeouts.
+
+## timeout.h
+The file timeout.h is a header file for managing timeout operations in the `io_uring` subsystem of the Linux kernel. It defines the `io_timeout_data` structure, which stores information about timeouts, such as the request, timer, duration, and flags. 
+
+## truncate.c
+The file truncate.c is part of the `io_uring` subsystem in the Linux kernel and implements support for asynchronous file truncation operations. It defines the `io_ftrunc` structure, which stores the file and the new length for truncation. 
+
+## truncate.h
+The file truncate.h is a header file for the `truncate.c` implementation in the `io_uring` subsystem of the Linux kernel. It declares the function prototypes for handling asynchronous file truncation operations. 
+
+## uring_cmd.c
+The file uring_cmd.c is part of the `io_uring` subsystem in the Linux kernel and implements support for custom commands (`uring_cmd`) that allow drivers to handle specialized operations through `io_uring`. It provides functions to prepare, execute, and clean up these commands. 
+
+## uring_cmd.h
+The file uring_cmd.h is a header file for managing custom commands (`uring_cmd`) in the `io_uring` subsystem of the Linux kernel. It defines the `io_async_cmd` structure, which stores data and resources for asynchronous commands, including command data (`data`), I/O vectors (`vec`), and submission queue entries (`sqes`). 
+
+## waitid.c
+The file waitid.c is part of the `io_uring` subsystem in the Linux kernel and implements support for asynchronous `waitid` system calls. The `waitid` system call is used to wait for changes in the state of a child process, such as termination or stopping. 
+
+## waitid.h
+The file waitid.h is a header file for managing asynchronous `waitid` operations in the `io_uring` subsystem of the Linux kernel. It defines the `io_waitid_async` structure, which stores information about `waitid` requests, including the request itself and wait options (`wait_opts`). 
+
+## xattr.c
+The file xattr.c is part of the `io_uring` subsystem in the Linux kernel and implements support for asynchronous extended attribute (`xattr`) operations. Extended attributes allow storing metadata for files, such as security labels or user-defined data. This file defines the `io_xattr` structure to manage `xattr` requests, including the file, attribute name, value, and flags. 
+
+## xattr.h
+The file xattr.h is a header file for managing asynchronous extended attribute (`xattr`) operations in the `io_uring` subsystem of the Linux kernel. It declares functions for preparing and executing `xattr` operations, such as `io_setxattr` and `io_getxattr` for setting and retrieving extended attributes, as well as their file-specific versions (`io_fsetxattr` and `io_fgetxattr`). 
+
+## zcrx.c
+The file zcrx.c is part of the `io_uring` subsystem in the Linux kernel and implements support for zero-copy receive (ZCRX) operations. Zero-copy receive allows applications to receive network data directly into user-space memory without additional copying, improving performance. 
+
+## zcrx.h
+The file zcrx.h is a header file for managing zero-copy receive (ZCRX) operations in the `io_uring` subsystem of the Linux kernel. It defines structures like `io_zcrx_area` and `io_zcrx_ifq` to manage memory areas and interface queues used for zero-copy data transfers. 
