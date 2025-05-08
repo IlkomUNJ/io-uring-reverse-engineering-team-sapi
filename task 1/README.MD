@@ -50,30 +50,66 @@ The file serves as the core implementation of Linux's io_uring subsystem, provid
 
 
 ### io-wq.c
+
 This file is a core component of Linux's io_uring subsystem that manages worker thread pools for handling asynchronous I/O operations. It provides efficient task distribution by maintaining both bounded and unbounded worker pools, where bounded workers have a fixed limit while unbounded workers scale based on system resources. The file implements sophisticated worker lifecycle management including creation, scheduling, and cleanup of worker threads. It features a hash-based work distribution system to prevent concurrent operations on the same resource (like an inode), handles worker CPU affinity for optimal performance, and includes mechanisms for graceful cancellation and cleanup of pending work. The code uses lock-free operations where possible and includes optimizations like worker pooling and reuse to minimize overhead. Created by Jens Axboe in 2019, this worker thread pool implementation is crucial for io_uring's ability to efficiently process asynchronous I/O requests while managing system resources and maintaining performance under various workloads.
 
 ### kbuf.c
+
 The is file implements the kernel buffer management system for Linux's io_uring subsystem, providing two distinct buffer handling mechanisms. The file handles both ring-based and legacy buffer operations, with a maximum of 65,536 buffers per buffer group (defined by MAX_BIDS_PER_BGID). At its core, the implementation manages shared memory regions between kernel and userspace for efficient I/O operations, using sophisticated buffer selection, commitment, and recycling mechanisms.
 
 ### memmap.c
+
 This file implements memory mapping and management functionality for the io_uring subsystem in the Linux kernel. It handles the complex task of managing memory regions shared between kernel and userspace, particularly for io_uring's ring buffers and related data structures.
 
 ### msg_ring.c
+
 This file implements the message ring functionality within Linux's io_uring subsystem, enabling direct communication between different io_uring instances. The implementation provides a sophisticated mechanism for inter-ring communication through two primary operations: data messaging (IORING_MSG_DATA) and file descriptor passing (IORING_MSG_SEND_FD).
 
 
 ### napi.c
+
 This file implements the New API (NAPI) integration for io_uring's networking functionality, specifically handling busy polling for network interfaces. The implementation is conditionally compiled under CONFIG_NET_RX_BUSY_POLL, providing optimized packet processing capabilities for io_uring network operations.
 
 ### net.c
+
 This file implements the networking operations for the io_uring subsystem in Linux, providing asynchronous network I/O functionality. The implementation handles a comprehensive set of socket operations including send, receive, accept, connect, bind, and listen operations, with support for both traditional and zero-copy data transfer methods.
 
 ### nop.c
+
 This file implements the "no-operation" (NOP) functionality for the io_uring subsystem, providing a testing and debugging mechanism for io_uring operations. The NOP operation serves as a lightweight way to test io_uring's infrastructure without performing actual I/O operations.
 
 ### notif.c
+
 This file implements the notification system for io_uring's zero-copy operations, particularly focusing on network data transfer. The implementation centers around managing notifications for zero-copy operations and buffer tracking through the io_notif_data structure.
 
+
+### opdef.c
+
+This file implements the operation definitions and handlers for various io_uring operations, serving as a central registry of supported operations. It defines operation-specific preparation and execution functions, managing the mapping between operation codes and their implementations.
+
+### openclose.c
+
+This file implements file opening and closing operations for io_uring, handling both synchronous and asynchronous file operations. It manages file descriptor lifecycle, including proper reference counting and cleanup, while supporting various flags and modes for file operations.
+
+### poll.c
+
+This file implements polling mechanisms for io_uring, providing efficient event monitoring capabilities. It handles both traditional poll operations and multishot polling, enabling applications to monitor multiple file descriptors for various events with minimal overhead.
+
+### register.c
+
+This file implements resource registration functionality for io_uring, managing the registration of buffers, files, and other resources. It handles the complex task of mapping user-space resources into the kernel context for efficient access during I/O operations.
+
+#### rsrc.c
+
+This file implements resource management for io_uring, handling allocation, tracking, and cleanup of various resources like buffers and file descriptors. It provides sophisticated reference counting and ensures proper resource lifecycle management across async operations.
+
+### rw.c
+
+This file implements the core read and write operations for io_uring, supporting both buffered and direct I/O paths. It handles various I/O patterns including vectored I/O, fixed buffers, and provides optimization for different storage types.
+
+### splice.c
+
+This file implements splice operations for io_uring, enabling zero-copy data transfer between file descriptors. It manages pipe-based operations and direct transfers between files, optimizing data movement by avoiding unnecessary copies.
 
 ## Headers 
 
@@ -82,23 +118,19 @@ This file implements the notification system for io_uring's zero-copy operations
 
 The io_madvise and io_fadvise functions, along with their preparation counterparts io_madvise_prep and io_fadvise_prep, are designed to handle advisory operations for memory and file access. Both io_madvise and io_fadvise share similar structures and attributes, making them functionally equivalent in terms of their data handling. However, their implementations are treated separately within the codebase. The usage of io_madvise is conditional, controlled by a compilation macro, which ensures that its related functions are only active when the corresponding build flag is enabled. In contrast, io_fadvise and its associated functions are always active. The specific differences between these two functions become apparent when examining the do_madvise function for io_madvise and the vfs_fadvise function for io_fadvise.
 
-
 ### alloc_cache.h
 
 The alloc_cache.h header file defines the structures and functions used for managing a memory allocation cache in the io_uring subsystem. It includes functions such as io_alloc_cache_free, which frees all cached entries and releases the memory used by the cache, and io_alloc_cache_init, which initializes the cache with a speci### advise.h
 
 The io_madvise and io_fadvise functions, along with their preparation counterparts io_madvise_prep and io_fadvise_prep, are designed to handle advisory operations for memory and file access. Both io_madvise and io_fadvise share similar structures and attributes, making them functionally equivalent in terms of their data handling. However, their implementations are treated separately within the cline functions like io_cache_alloc and io_cache_free for efficient memory allocation and deallocation. Additionally, the code integrates with KASAN (Kernel Address Sanitizer) to ensure memory safety by poisoning and unpoisoning objects as needed. The cache size is limited by the IO_ALLOC_CACHE_MAX macro, ensuring it does not grow beyond a predefined threshold.
 
-
 ### cancel.h
 
 The cancel.h header file defines the structures and functions used for managing I/O request cancellations in the io_uring subsystem. It introduces the io_cancel_data structure, which holds information about the cancellation context, including the associated io_ring_ctx, flags, opcode, and sequence number. The file declares functions such as io_async_cancel_prep and io_async_cancel for preparing and executing asynchronous cancellations, as well as io_sync_cancel for handling synchronous cancellations. Additionally, it provides utility functions like io_cancel_req_match to check if a request matches specific cancellation criteria and io_cancel_remove_all or io_cancel_remove to remove matching requests from the cancellation list. The inline function io_cancel_match_sequence ensures that cancellation sequences are properly tracked and matched. These definitions and functions enable efficient and flexible cancellation mechanisms within the io_uring framework.
 
-
 ### epoll.h
 
 The epoll.h header file declares functions for integrating epoll operations into the io_uring subsystem, provided that the kernel is configured with CONFIG_EPOLL. It includes the io_epoll_ctl_prep and io_epoll_ctl functions for preparing and executing epoll control operations, allowing users to add, modify, or remove file descriptors from an epoll instance. Additionally, it declares the io_epoll_wait_prep and io_epoll_wait functions, which handle the preparation and execution of epoll wait operations, enabling the retrieval of events from an epoll instance. These declarations facilitate the use of epoll functionality within the asynchronous and non-blocking framework of io_uring.
-
 
 ### eventfd.h
 
@@ -112,7 +144,6 @@ The fdinfo.h header file declares the io_uring_show_fdinfo function, which is re
 
 The filetable.h header file declares functions and inline utilities for managing file descriptor tables within the io_uring subsystem. It includes functions such as io_alloc_file_tables and io_free_file_tables for allocating and freeing file tables, as well as io_fixed_fd_install and io_fixed_fd_remove for installing and removing fixed file descriptors. The io_register_file_alloc_range function allows users to specify a range of file descriptor slots for allocation. Inline utilities like io_file_bitmap_set and io_file_bitmap_clear manage bitmap operations for tracking available slots, while io_fixed_file_set and io_slot_file handle file descriptor assignments and retrievals. These definitions ensure efficient and synchronized management of file descriptors, enabling seamless integration with the io_uring framework.
 
-
 ### fs.h
 
 The fs.h header file declares functions for handling file system operations within the io_uring subsystem. It includes preparation, execution, and cleanup functions for various file system tasks such as renaming (io_renameat_prep, io_renameat, io_renameat_cleanup), unlinking (io_unlinkat_prep, io_unlinkat, io_unlinkat_cleanup), creating directories (io_mkdirat_prep, io_mkdirat, io_mkdirat_cleanup), creating symbolic links (io_symlinkat_prep, io_symlinkat), and creating hard links (io_linkat_prep, io_linkat, io_link_cleanup). These functions ensure proper validation of input parameters, handle user-space paths, and integrate seamlessly with the asynchronous and non-blocking capabilities of the io_uring framework.
@@ -121,57 +152,74 @@ The fs.h header file declares functions for handling file system operations with
 
 The futex.h header file declares functions for managing futex operations within the io_uring subsystem. It includes functions like io_futex_prep and io_futexv_prep for preparing futex wait and wake operations, as well as io_futex_wait, io_futexv_wait, and io_futex_wake for executing these operations. Additionally, it provides functions for handling futex cancellations (io_futex_cancel) and removing all futex-related requests (io_futex_remove_all). The file also includes functions for initializing and freeing futex caches (io_futex_cache_init and io_futex_cache_free) to optimize memory usage. Conditional compilation ensures that these functions are only active when the CONFIG_FUTEX configuration is enabled, with inline stubs provided for cases where futex support is not available. This header facilitates seamless integration of futex functionality into the asynchronous io_uring framework.
 
-
 ### io_uring.h
 
 The header serves as the interface contract between different components of io_uring, providing the necessary definitions and utilities for implementing asynchronous I/O operations in Linux. It's designed to be efficient with lockless operations where possible and careful synchronization between kernel and userspace.
-
-
 
 ### io-wq.h
 
 This header file defines the interface and core structures for the io_uring worker queue system, serving as a crucial bridge between io_uring's core functionality and its worker thread management. At its heart, the file establishes the contract for handling asynchronous I/O work items through a sophisticated work queue system. It introduces essential work types including cancellable work (IO_WQ_WORK_CANCEL), hashed work for preventing concurrent operations (IO_WQ_WORK_HASHED), unbound work that can run on any worker (IO_WQ_WORK_UNBOUND), and concurrent work items (IO_WQ_WORK_CONCURRENT). The header implements a hash-based system using the upper 8 bits for hash keys, enabling efficient work distribution and concurrency control. 
 
-
-
 ### kbuf.h
 
 This header file defines the core interfaces and data structures for kernel buffer management in the io_uring subsystem. The implementation supports two distinct buffer handling mechanisms: ring-mapped buffers and classic provided buffers, unified under a common interface.
-
-
 
 ### memmap.h
 
 This header file defines the core memory mapping interface for the io_uring subsystem in Linux. It provides essential definitions and function declarations for managing memory regions that are shared between kernel space and user space applications.
 
-
-
 ### msg-ring.h
 
 The header file defines the interface for message ring operations in the io_uring subsystem, providing a crucial communication mechanism between different io_uring instances. This header declares four essential functions that form the backbone of inter-ring messaging.
-
-
 
 ### napi.h
 
 This header file defines the interface for NAPI (New API) integration within the io_uring subsystem, specifically focused on network receive packet processing optimization. The implementation is conditionally compiled based on the CONFIG_NET_RX_BUSY_POLL configuration option, providing two distinct implementations: a full-featured version for systems with busy polling enabled and a minimal stub implementation for systems without this feature.
 
-
-
 ### net.h
 
 The net.h header file defines the core networking interface for the Linux io_uring subsystem, providing declarations for asynchronous network operations. The implementation is conditionally compiled based on CONFIG_NET, offering a full-featured networking API when networking support is enabled, and stub implementations when disabled.
-
-
 
 ### nop.h
 
 The header file defines a minimal but crucial testing interface for the io_uring subsystem, focusing on the "no-operation" (NOP) functionality. At its core, the header exposes just two essential functions: io_nop_prep() for preparing NOP requests from submission queue entries, and io_nop() for executing these requests with specific issue flags. This deliberately minimalist design serves as a fundamental testing mechanism for validating io_uring's infrastructure without the overhead of actual I/O operations. The interface is particularly valuable for debugging completion queue behavior, verifying resource management, and establishing performance benchmarks. By providing these basic operations, developers can effectively test the core mechanics of io_uring, including request submission, completion handling, and various flag combinations, making it an indispensable tool for both development and system validation.
 
+### notif.h
 
+This header file defines the interface for io_uring's zero-copy notification system, particularly focused on network data transfer operations. It declares essential structures and functions for managing buffer notifications, including the io_notif_data structure that tracks zero-copy operations state, buffer management functions, and completion notification handlers. The header provides crucial definitions for memory accounting, buffer tracking flags (like IO_NOTIF_UBUF_FLAGS), and sophisticated buffer completion mechanisms that ensure efficient handling of zero-copy operations.
 
+### opdef.h
 
+This header file establishes the comprehensive operation definition framework for io_uring, defining the interface for registering and managing operation handlers. It declares structures and enums for operation codes, preparation functions, and execution handlers. The file includes sophisticated operation registration macros, validation functions for operation parameters, and type-safe interfaces for handling different operation categories. It acts as a central registry contract for all supported io_uring operations.
 
+### openclose.h
 
+This header file defines the interface for file operations in io_uring, handling both synchronous and asynchronous file management. It declares structures and functions for managing file lifecycles, including sophisticated reference counting mechanisms, file mode validation, and cleanup handlers. The interface supports various open flags, modes, and directory operations, with special handling for different file system types and access patterns.
 
+### poll.h
 
+This header file establishes the polling interface for io_uring, defining structures and functions for event monitoring. It includes declarations for both single-shot and multishot polling operations, timeout handling, and event filtering mechanisms. The interface supports sophisticated poll wake-up strategies, event masking, and efficient state tracking for multiple file descriptors, with special considerations for performance optimization.
+
+### refs.h
+
+This header file defines the reference counting system used throughout io_uring, providing atomic reference management for various resources. It declares sophisticated reference tracking mechanisms, including functions for acquisition, release, and lifecycle management. The interface includes debug facilities, reference validation, and thread-safe reference manipulation, ensuring proper resource management across async operations.
+
+### register.h
+
+This header file defines the comprehensive resource registration interface for io_uring, declaring structures and functions for managing various resource types. It includes sophisticated buffer registration mechanisms, file descriptor mapping, and user memory registration. The interface provides atomic operations for resource tracking, validation functions for registered resources, and efficient lookup mechanisms for rapid resource access.
+
+### rsrc.h
+
+This header file establishes the resource management interface for io_uring, defining structures and functions for tracking and managing system resources. It includes sophisticated reference counting mechanisms, resource allocation strategies, and cleanup handlers. The interface supports various resource types, provides thread-safe resource manipulation, and includes debugging facilities for resource tracking.
+
+### rw.h
+
+This header file defines the read and write operation interface for io_uring, declaring structures and functions for various I/O patterns. It includes support for vectored I/O, direct I/O, buffered I/O, and fixed buffers. The interface provides sophisticated buffer management, completion tracking, and performance optimization facilities for different storage types and access patterns.
+
+### slist.h
+
+This header file defines a specialized singly-linked list implementation optimized for io_uring's needs. It declares lock-free list manipulation functions, intrusive list structures, and efficient traversal mechanisms. The interface includes atomic operations for thread-safe list manipulation, optimized memory layout for cache efficiency, and specialized list operations for high-performance queue management.
+
+### splice.h
+
+This header file defines the interface for zero-copy data transfer operations in io_uring, focusing on efficient data movement between file descriptors. It declares structures and functions for managing pipe operations, direct file-to-file transfers, and sophisticated buffer management. The interface includes specialized handling for different types of file descriptors, completion tracking mechanisms, and optimization strategies for various transfer patterns.
