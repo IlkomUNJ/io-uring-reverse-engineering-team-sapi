@@ -18,3 +18,7 @@ Score is mainly calculated from individual contributions made to the commit. The
 - Muhammad Fikri Firmansyah - 1313623054
 - Hafizh Laththuf Muhammad - 1313623005
 - Abraham Basmah Rahmatullah - 1313623056
+
+## Link to the answe of each task
+- [Task 1](/task%201/README.MD)
+- [Task 2](/task%202/README.MD)
