@@ -1176,541 +1176,532 @@
 ### sqpoll.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| sqpoll.c | 	 | revert_creds | 1 |
-|	 | 	#include <linux/kernel.h> | task_work_pending | 1 |
-|	 | 	#include <linux/errno.h> | prepare_to_wait | 2 |
-|	 | 	#include <linux/file.h> | raw_smp_processor_id | 4 |
-|	 | #include <linux/mm.h>	 | __releases | 1 |
-|	 | #include <linux/slab.h>	 | schedule | 2 |
-|	 | 	#include <linux/audit.h> | mutex_init | 1 |
-|	 | #include <linux/security.h>	 | set_cpus_allowed_ptr | 2 |
-|	 | 	#include <linux/cpuset.h> | complete | 2 |
-|	 | 	#include <linux/io_uring.h> | wq_list_empty | 4 |
-|	 | 	#include <uapi/linux/io_uring.h> | security_uring_sqpoll | 1 |
-|	 | 	#include "io_uring.h" | getrusage | 2 |
-|	 | 	#include "napi.h" | io_sqd_events_pending | 2 |
-|	 | 	#include "sqpoll.h" | test_bit | 3 |
-|	 | 	 | init_waitqueue_head | 1 |
-|	 | 	 | kzalloc | 1 |
-|	 | 	 | cond_resched | 1 |
-|	 | 	 | clear_bit | 1 |
-|	 | 	 | alloc_cpumask_var | 1 |
-|	 | 	 | free_cpumask_var | 2 |
-|	 | 	 | refcount_set | 1 |
-|	 | 	 | io_sqd_handle_event | 1 |
-|	 | 	 | atomic_inc | 1 |
-|	 | 	 | atomic_andnot | 1 |
-|	 | 	 | PTR_ERR | 3 |
-|	 | 	 | list_add | 1 |
-|	 | 	 | get_signal | 1 |
-|	 | 	 | IS_ERR | 3 |
-|	 | 	 | io_sqring_full | 2 |
-|	 | 	 | io_uring_alloc_task_context | 1 |
-|	 | 	 | CLASS | 2 |
-|	 | 	 | snprintf | 1 |
-|	 | 	 | data_race | 1 |
-|	 | 	 | wake_up | 2 |
-|	 | 	 | create_io_thread | 1 |
-|	 | 	 | io_sq_thread_park | 3 |
-|	 | 	 | ERR_PTR | 5 |
-|	 | 	 | io_sqd_update_thread_idle | 2 |
-|	 | 	 | io_sqring_entries | 2 |
-|	 | 	 | need_resched | 1 |
-|	 | 	 | __io_sq_thread | 1 |
-|	 | 	 | atomic_read | 2 |
-|	 | 	 | io_sq_thread_unpark | 3 |
-|	 | 	 | cpuset_cpus_allowed | 1 |
-|	 | 	 | refcount_inc | 1 |
-|	 | 	 | io_sq_update_worktime | 1 |
-|	 | 	 | wait_event | 1 |
-|	 | 	 | io_run_task_work | 1 |
-|	 | 	 | time_after | 1 |
-|	 | 	 | msecs_to_jiffies | 1 |
-|	 | 	 | fd_empty | 2 |
-|	 | 	 | cpu_online | 1 |
-|	 | 	 | likely | 1 |
-|	 | 	 | percpu_ref_is_dying | 1 |
-|	 | 	 | io_wq_cpu_affinity | 1 |
-|	 | 	 | get_task_struct | 1 |
-|	 | 	 | io_attach_sq_data | 1 |
-|	 | 	 | atomic_set | 1 |
-|	 | 	 | io_put_sq_data | 1 |
-|	 | 	 | io_submit_sqes | 1 |
-|	 | 	 | io_uring_cancel_generic | 1 |
-|	 | 	 | io_sq_thread_finish | 1 |
-|	 | 	 | set_bit | 3 |
-|	 | 	 | io_get_sq_data | 1 |
-|	 | 	 | llist_empty | 1 |
-|	 | 	 | wake_up_process | 2 |
-|	 | 	 | unlikely | 1 |
-|	 | 	 | current_cred | 1 |
-|	 | 	 | wq_has_sleeper | 1 |
-|	 | 	 | audit_uring_exit | 1 |
-|	 | 	 | max | 1 |
-|	 | 	 | smp_mb__after_atomic | 1 |
-|	 | 	 | task_work_run | 1 |
-|	 | 	 | tctx_task_work_run | 1 |
-|	 | 	 | wait_for_completion | 1 |
-|	 | 	 | io_napi | 1 |
-|	 | 	 | audit_uring_entry | 1 |
-|	 | 	 | READ_ONCE | 1 |
-|	 | 	 | io_sq_tw_pending | 1 |
-|	 | 	 | mutex_lock | 8 |
-|	 | 	 | do_exit | 1 |
-|	 | 	 | io_sq_tw | 2 |
-|	 | 	 | get_current_cred | 1 |
-|	 | 	 | __acquires | 1 |
-|	 | 	 | finish_wait | 2 |
-|	 | 	 | wake_up_new_task | 1 |
-|	 | 	 | cpumask_of | 1 |
-|	 | 	 | io_handle_tw_list | 1 |
-|	 | 	 | WARN_ON_ONCE | 5 |
-|	 | 	 | mutex_unlock | 8 |
-|	 | 	 | list_is_singular | 1 |
-|	 | 	 | io_napi_sqpoll_busy_poll | 1 |
-|	 | 	 | init_completion | 1 |
-|	 | 	 | io_do_iopoll | 1 |
-|	 | 	 | io_is_uring_fops | 2 |
-|	 | 	 | fd_file | 3 |
-|	 | 	 | atomic_or | 2 |
-|	 | 	 | DEFINE_WAIT | 2 |
-|	 | 	 | signal_pending | 4 |
-|	 | 	 | list_del_init | 1 |
-|	 | 	 | put_task_struct | 2 |
-|	 | 	 | override_creds | 1 |
-|	 | 	 | kfree | 1 |
-|	 | 	 | INIT_LIST_HEAD | 1 |
-|	 | 	 | atomic_dec_return | 1 |
-|	 | 	 | set_task_comm | 1 |
-|	 | 	 | io_sq_thread_stop | 1 |
-|	 | 	 | list_for_each_entry | 6 |
-|	 | 	 | refcount_dec_and_test | 1 |
-|	 | 	 | cpumask_test_cpu | 1 |
+| sqpoll.c | io_uring/io-wq.c | set_bit | 3 |
+| | io_uring/slist.h | wq_list_empty | 4 |
+| | io_uring/io_uring.c | llist_empty | 1 |
+| | io_uring/io_uring.h | percpu_ref_is_dying | 1 |
+| | io_uring/sqpoll.c | cpu_online | 1 |
+| | io_uring/io-wq.c | kzalloc | 1 |
+| | io_uring/io-wq.c | get_task_struct | 1 |
+| | io_uring/sqpoll.c | wait_event | 1 |
+| | io_uring/io-wq.c | INIT_LIST_HEAD | 1 |
+| | io_uring/fdinfo.c | getrusage | 2 |
+| | io_uring/msg_ring.c | fd_file | 3 |
+| | io_uring/sqpoll.c | atomic_dec_return | 1 |
+| | io_uring/cancel.c | mutex_unlock | 8 |
+| | io_uring/io_uring.c | audit_uring_entry | 1 |
+| | io_uring/io_uring.c | current_cred | 1 |
+| | io_uring/cancel.c | unlikely | 1 |
+| | io_uring/io-wq.c | clear_bit | 1 |
+| | io_uring/cancel.c | DEFINE_WAIT | 2 |
+| | io_uring/sqpoll.h | io_sq_thread_finish | 1 |
+| | io_uring/sqpoll.h | io_sq_thread_park | 3 |
+| | io_uring/cancel.c | finish_wait | 2 |
+| | io_uring/filetable.c | io_is_uring_fops | 2 |
+| | io_uring/fdinfo.c | task_work_pending | 1 |
+| | io_uring/io_uring.c | override_creds | 1 |
+| | io_uring/io_uring.c | max | 1 |
+| | io_uring/sqpoll.h | io_put_sq_data | 1 |
+| | io_uring/io_uring.h | io_handle_tw_list | 1 |
+| | io_uring/sqpoll.c | security_uring_sqpoll | 1 |
+| | io_uring/io-wq.c | cond_resched | 1 |
+| | io_uring/cancel.c | prepare_to_wait | 2 |
+| | io_uring/sqpoll.h | io_sq_thread_stop | 1 |
+| | io_uring/io-wq.c | msecs_to_jiffies | 1 |
+| | io_uring/io_uring.c | init_waitqueue_head | 1 |
+| | io_uring/io-wq.c | __releases | 1 |
+| | io_uring/notif.c | complete | 2 |
+| | io_uring/io_uring.c | mutex_init | 1 |
+| | io_uring/io_uring.h | io_submit_sqes | 1 |
+| | io_uring/io-wq.h | io_wq_cpu_affinity | 1 |
+| | io_uring/refs.h | data_race | 1 |
+| | io_uring/sqpoll.c | io_sqd_events_pending | 2 |
+| | io_uring/io-wq.c | atomic_read | 2 |
+| | io_uring/sqpoll.c | smp_mb__after_atomic | 1 |
+| | io_uring/io-wq.c | wait_for_completion | 1 |
+| | io_uring/io-wq.c | free_cpumask_var | 2 |
+| | io_uring/io-wq.c | do_exit | 1 |
+| | io_uring/io-wq.c | wake_up_new_task | 1 |
+| | io_uring/io-wq.c | raw_smp_processor_id | 4 |
+| | io_uring/io-wq.c | wake_up_process | 2 |
+| | io_uring/advise.c | WARN_ON_ONCE | 5 |
+| | io_uring/cancel.c | mutex_lock | 8 |
+| | io_uring/io-wq.c | get_signal | 1 |
+| | io_uring/io-wq.c | __acquires | 1 |
+| | io_uring/sqpoll.c | io_sq_update_worktime | 1 |
+| | io_uring/io_uring.c | revert_creds | 1 |
+| | io_uring/alloc_cache.h | kfree | 1 |
+| | io_uring/sqpoll.c | io_get_sq_data | 1 |
+| | io_uring/io-wq.c | io_run_task_work | 1 |
+| | io_uring/io-wq.c | likely | 1 |
+| | io_uring/io_uring.h | task_work_run | 1 |
+| | io_uring/io-wq.c | ERR_PTR | 5 |
+| | io_uring/io_uring.h | io_uring_cancel_generic | 1 |
+| | io_uring/io-wq.c | init_completion | 1 |
+| | io_uring/eventfd.c | refcount_dec_and_test | 1 |
+| | io_uring/io_uring.c | atomic_andnot | 1 |
+| | io_uring/io-wq.c | put_task_struct | 2 |
+| | io_uring/io-wq.c | atomic_inc | 1 |
+| | io_uring/io-wq.c | alloc_cpumask_var | 1 |
+| | io_uring/io_uring.c | io_sqring_entries | 2 |
+| | io_uring/sqpoll.c | io_sq_tw | 2 |
+| | io_uring/sqpoll.c | cpumask_of | 1 |
+| | io_uring/sqpoll.h | io_sq_thread_unpark | 3 |
+| | io_uring/sqpoll.c | io_sqd_update_thread_idle | 2 |
+| | io_uring/filetable.h | test_bit | 3 |
+| | io_uring/napi.h | io_napi_sqpoll_busy_poll | 1 |
+| | io_uring/eventfd.c | atomic_set | 1 |
+| | io_uring/io_uring.h | io_uring_alloc_task_context | 1 |
+| | io_uring/kbuf.c | list_add | 1 |
+| | io_uring/sqpoll.c | io_attach_sq_data | 1 |
+| | io_uring/msg_ring.c | fd_empty | 2 |
+| | io_uring/io-wq.c | list_del_init | 1 |
+| | io_uring/io-wq.c | snprintf | 1 |
+| | io_uring/io-wq.c | wake_up | 2 |
+| | io_uring/io-wq.c | cpuset_cpus_allowed | 1 |
+| | io_uring/sqpoll.c | __io_sq_thread | 1 |
+| | io_uring/io-wq.c | signal_pending | 4 |
+| | io_uring/msg_ring.c | CLASS | 2 |
+| | io_uring/eventfd.c | PTR_ERR | 3 |
+| | io_uring/eventfd.c | refcount_set | 1 |
+| | io_uring/io_uring.c | io_sqring_full | 2 |
+| | io_uring/cancel.c | list_for_each_entry | 6 |
+| | io_uring/eventfd.c | IS_ERR | 3 |
+| | io_uring/io_uring.c | get_current_cred | 1 |
+| | io_uring/io-wq.c | wq_has_sleeper | 1 |
+| | io_uring/io-wq.c | atomic_or | 2 |
+| | io_uring/io-wq.c | cpumask_test_cpu | 1 |
+| | io_uring/sqpoll.c | io_sqd_handle_event | 1 |
+| | io_uring/napi.h | io_napi | 1 |
+| | io_uring/napi.c | list_is_singular | 1 |
+| | io_uring/io_uring.h | io_do_iopoll | 1 |
+| | io_uring/sqpoll.c | io_sq_tw_pending | 1 |
+| | io_uring/io-wq.c | refcount_inc | 1 |
+| | io_uring/advise.c | READ_ONCE | 1 |
+| | io_uring/io-wq.c | create_io_thread | 1 |
+| | io_uring/io_uring.c | schedule | 2 |
+| | io_uring/io_uring.c | need_resched | 1 |
+| | io_uring/io-wq.c | set_task_comm | 1 |
+| | io_uring/io_uring.h | tctx_task_work_run | 1 |
+| | io_uring/io-wq.c | set_cpus_allowed_ptr | 2 |
+| | io_uring/io_uring.c | audit_uring_exit | 1 |
+| | io_uring/io_uring.c | time_after | 1 |
 
 ### statx.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| statx.c | #include <linux/kernel.h> | io_kiocb_to_cmd | 3 |
-|	 | 	#include <linux/errno.h> | getname_uflags | 1 |
-|	 | #include <linux/file.h>	 | u64_to_user_ptr | 2 |
-|	 | #include <linux/io_uring.h>	 | io_req_set_res | 1 |
-|	 | 	#include <uapi/linux/io_uring.h> | PTR_ERR | 1 |
-|	 | 	#include "../fs/internal.h" | READ_ONCE | 5 |
-|	 | 	#include "io_uring.h" | do_statx | 1 |
-|	 | 	#include "statx.h"  | IS_ERR | 1 |
-|	 | 	 | putname | 1 |
-|	 | 	 | WARN_ON_ONCE | 1 |
+| statx.c | io_uring/statx.c | do_statx | 1 |
+| | io_uring/advise.c | io_req_set_res | 1 |
+| | io_uring/eventfd.c | PTR_ERR | 1 |
+| | io_uring/eventfd.c | IS_ERR | 1 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 3 |
+| | io_uring/fs.c | getname_uflags | 1 |
+| | io_uring/advise.c | WARN_ON_ONCE | 1 |
+| | io_uring/advise.c | READ_ONCE | 5 |
+| | io_uring/fs.c | putname | 1 |
+| | io_uring/epoll.c | u64_to_user_ptr | 2 |
 
 ### sync.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| sync.c | 	#include <linux/kernel.h>| io_kiocb_to_cmd | 6 |
-|	 | 	#include <linux/errno.h> | WARN_ON_ONCE | 3 |
-|	 | 	#include <linux/fs.h> | vfs_fsync_range | 1 |
-|	 | 	#include <linux/file.h> | fsnotify_modify | 1 |
-|	 | 	#include <linux/mm.h> | READ_ONCE | 9 |
-|	 | 	#include <linux/slab.h> | sync_file_range | 1 |
-|	 | 	#include <linux/namei.h> | io_req_set_res | 3 |
-|	 | 	#include <linux/io_uring.h> | unlikely | 3 |
-|	 | 	#include <linux/fsnotify.h> | vfs_fallocate | 1 |
-|    |  #include <uapi/linux/io_uring.h>
-|    |  #include "io_uring.h"
+| sync.c | io_uring/sync.c | vfs_fallocate | 1 |
+| | io_uring/advise.c | WARN_ON_ONCE | 3 |
+| | io_uring/advise.c | io_req_set_res | 3 |
+| | io_uring/sync.c | sync_file_range | 1 |
+| | io_uring/advise.c | READ_ONCE | 9 |
+| | io_uring/sync.c | vfs_fsync_range | 1 |
+| | io_uring/rw.c | fsnotify_modify | 1 |
+| | io_uring/cancel.c | unlikely | 3 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 6 |
 
 ### tctx.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| tctx.c | #include <linux/kernel.h> | cond_resched | 1 |
-|	 | #include <linux/errno.h>	 | percpu_counter_destroy | 2 |
-|	 | #include <linux/file.h>	 | atomic_set | 2 |
-|	 | 	#include <linux/mm.h> | xa_for_each | 2 |
-|	 | 	#include <linux/slab.h> | xa_init | 1 |
-|	 | #include <linux/nospec.h>	 | num_online_cpus | 1 |
-|	 | #include <linux/io_uring.h>	 | xa_err | 1 |
-|	 | #include <uapi/linux/io_uring.h>	 | array_index_nospec | 2 |
-|	 | #include "io_uring.h"	 | list_del | 1 |
-|	 | #include "tctx.h"	 | mutex_lock | 4 |
-|	 | 	 | WARN_ON_ONCE | 5 |
-|	 | 	 | copy_from_user | 2 |
-|	 | 	 | init_llist_head | 1 |
-|	 | 	 | io_uring_del_tctx_node | 1 |
-|	 | 	 | list_add | 1 |
-|	 | 	 | io_ring_add_registered_file | 1 |
-|	 | 	 | xa_load | 1 |
-|	 | 	 | fput | 5 |
-|	 | 	 | init_waitqueue_head | 2 |
-|	 | 	 | __io_uring_add_tctx_node | 2 |
-|	 | 	 | kzalloc | 2 |
-|	 | 	 | io_ring_add_registered_fd | 1 |
-|	 | 	 | PTR_ERR | 1 |
-|	 | 	 | refcount_set | 1 |
-|	 | 	 | ERR_PTR | 1 |
-|	 | 	 | percpu_counter_init | 1 |
-|	 | 	 | io_wq_max_workers | 1 |
-|	 | 	 | io_wq_create | 1 |
-|	 | 	 | io_is_uring_fops | 1 |
-|	 | 	 | io_uring_alloc_task_context | 1 |
-|	 | 	 | copy_to_user | 1 |
-|	 | 	 | xa_erase | 1 |
-|	 | 	 | list_empty | 1 |
-|	 | 	 | kfree | 5 |
-|	 | 	 | kmalloc | 1 |
-|	 | 	 | min | 1 |
-|	 | 	 | IS_ERR | 1 |
-|	 | 	 | io_init_wq_offload | 1 |
-|	 | 	 | fget | 1 |
-|	 | 	 | mutex_unlock | 5 |
-|	 | 	 | xa_store | 1 |
-|	 | 	 | init_task_work | 1 |
-|	 | 	 | unlikely | 4 |
-|	 | 	 | io_wq_put_and_exit | 1 |
+| tctx.c | io_uring/alloc_cache.h | kfree | 5 |
+| | io_uring/cancel.c | mutex_lock | 4 |
+| | io_uring/tctx.c | io_ring_add_registered_fd | 1 |
+| | io_uring/io_uring.c | xa_load | 1 |
+| | io_uring/kbuf.c | xa_store | 1 |
+| | io_uring/io-wq.h | io_wq_put_and_exit | 1 |
+| | io_uring/io-wq.h | io_wq_create | 1 |
+| | io_uring/io-wq.c | kzalloc | 2 |
+| | io_uring/cancel.c | copy_from_user | 2 |
+| | io_uring/eventfd.c | refcount_set | 1 |
+| | io_uring/io_uring.c | init_waitqueue_head | 2 |
+| | io_uring/tctx.h | io_uring_del_tctx_node | 1 |
+| | io_uring/advise.c | WARN_ON_ONCE | 5 |
+| | io_uring/io_uring.h | io_ring_add_registered_file | 1 |
+| | io_uring/fdinfo.c | xa_for_each | 2 |
+| | io_uring/cancel.c | mutex_unlock | 5 |
+| | io_uring/io_uring.c | list_del | 1 |
+| | io_uring/kbuf.c | list_add | 1 |
+| | io_uring/io_uring.c | array_index_nospec | 2 |
+| | io_uring/io_uring.c | xa_init | 1 |
+| | io_uring/fdinfo.c | min | 1 |
+| | io_uring/eventfd.c | PTR_ERR | 1 |
+| | io_uring/io-wq.c | list_empty | 1 |
+| | io_uring/tctx.c | percpu_counter_init | 1 |
+| | io_uring/filetable.c | io_is_uring_fops | 1 |
+| | io_uring/cancel.c | fput | 5 |
+| | io_uring/cancel.c | fget | 1 |
+| | io_uring/kbuf.c | xa_erase | 1 |
+| | io_uring/eventfd.c | IS_ERR | 1 |
+| | io_uring/io_uring.c | copy_to_user | 1 |
+| | io_uring/tctx.c | num_online_cpus | 1 |
+| | io_uring/io-wq.c | init_task_work | 1 |
+| | io_uring/io-wq.c | ERR_PTR | 1 |
+| | io_uring/io_uring.c | init_llist_head | 1 |
+| | io_uring/tctx.h | __io_uring_add_tctx_node | 2 |
+| | io_uring/kbuf.c | xa_err | 1 |
+| | io_uring/cancel.c | unlikely | 4 |
+| | io_uring/alloc_cache.c | kmalloc | 1 |
+| | io_uring/io-wq.h | io_wq_max_workers | 1 |
+| | io_uring/tctx.c | percpu_counter_destroy | 2 |
+| | io_uring/eventfd.c | atomic_set | 2 |
+| | io_uring/tctx.c | io_init_wq_offload | 1 |
+| | io_uring/io-wq.c | cond_resched | 1 |
+| | io_uring/io_uring.h | io_uring_alloc_task_context | 1 |
 
 ### timeout.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| timeout.c | #include <linux/kernel.h> | atomic_read | 4 |
-|	 | 	#include <linux/errno.h> | io_queue_next | 1 |
-|	 | 	#include <linux/file.h> | req_has_async_data | 1 |
-|	 | #include <linux/io_uring.h>	 | io_put_req | 2 |
-|	 | #include <trace/events/io_uring.h>	 | hrtimer_start | 5 |
-|	 | #include <uapi/linux/io_uring.h>	 | io_fail_links | 1 |
-|	 | 	#include "io_uring.h" | io_cancel_req_match | 1 |
-|	 | 	#include "refs.h" | list_add | 2 |
-|	 | 	#include "cancel.h" | io_linked_timeout_update | 1 |
-|	 | 	#include "timeout.h" | list_del_init | 3 |
-|	 | 	 | hrtimer_setup | 4 |
-|	 | 	 | io_req_post_cqe | 1 |
-|	 | 	 | READ_ONCE | 4 |
-|	 | 	 | container_of | 2 |
-|	 | 	 | IS_ERR | 2 |
-|	 | 	 | timespec64_to_ktime | 5 |
-|	 | 	 | io_translate_timeout_mode | 2 |
-|	 | 	 | __io_timeout_prep | 2 |
-|	 | 	 | io_is_timeout_noseq | 3 |
-|	 | 	 | io_flush_killed_timeouts | 2 |
-|	 | 	 | spin_unlock | 2 |
-|	 | 	 | req_ref_put_and_test | 1 |
-|	 | 	 | hrtimer_try_to_cancel | 4 |
-|	 | 	 | io_timeout_update | 1 |
-|	 | 	 | io_uring_alloc_async_data | 1 |
-|	 | 	 | io_match_task | 1 |
-|	 | 	 | unlikely | 3 |
-|	 | 	 | list_add_tail | 2 |
-|	 | 	 | io_timeout_finish | 1 |
-|	 | 	 | atomic_set | 2 |
-|	 | 	 | trace_io_uring_fail_link | 1 |
-|	 | 	 | raw_spin_unlock_irq | 6 |
-|	 | 	 | io_req_set_res | 5 |
-|	 | 	 | list_empty | 2 |
-|	 | 	 | INIT_LIST_HEAD | 1 |
-|	 | 	 | hweight32 | 2 |
-|	 | 	 | list_for_each_entry | 2 |
-|	 | 	 | io_req_task_complete | 4 |
-|	 | 	 | io_should_terminate_tw | 1 |
-|	 | 	 | list_for_each_entry_safe | 2 |
-|	 | 	 | data_race | 1 |
-|	 | 	 | LIST_HEAD | 2 |
-|	 | 	 | io_disarm_linked_timeout | 1 |
-|	 | 	 | u64_to_user_ptr | 2 |
-|	 | 	 | spin_lock | 2 |
-|	 | 	 | list_first_entry | 1 |
-|	 | 	 | PTR_ERR | 2 |
-|	 | 	 | __must_hold | 10 |
-|	 | 	 | io_for_each_link | 1 |
-|	 | 	 | list_entry | 1 |
-|	 | 	 | io_remove_next_linked | 3 |
-|	 | 	 | io_kiocb_to_cmd | 14 |
-|	 | 	 | list_for_each_prev | 1 |
-|	 | 	 | io_free_req | 1 |
-|	 | 	 | cmd_to_io_kiocb | 6 |
-|	 | 	 | raw_spin_unlock_irqrestore | 2 |
-|	 | 	 | list_move_tail | 1 |
-|	 | 	 | io_tw_lock | 1 |
-|	 | 	 | io_timeout_cancel | 1 |
-|	 | 	 | io_kill_timeout | 2 |
-|	 | 	 | io_req_task_queue_fail | 1 |
-|	 | 	 | io_timeout_get_clock | 4 |
-|	 | 	 | raw_spin_lock_irq | 8 |
-|	 | 	 | list_del | 2 |
-|	 | 	 | io_timeout_extract | 2 |
-|	 | 	 | io_req_queue_tw_complete | 3 |
-|	 | 	 | WARN_ON_ONCE | 2 |
-|	 | 	 | io_try_cancel | 1 |
-|	 | 	 | raw_spin_lock_irqsave | 2 |
-|	 | 	 | ERR_PTR | 2 |
-|	 | 	 | get_timespec64 | 2 |
-|	 | 	 | req_ref_inc_not_zero | 1 |
-|	 | 	 | io_req_task_work_add | 3 |
-|	 | 	 | req_set_fail | 3 |
+| timeout.c | io_uring/timeout.c | list_for_each_prev | 1 |
+| | io_uring/timeout.c | raw_spin_unlock_irqrestore | 2 |
+| | io_uring/futex.c | io_tw_lock | 1 |
+| | io_uring/refs.h | req_ref_inc_not_zero | 1 |
+| | io_uring/cancel.c | unlikely | 3 |
+| | io_uring/io_uring.h | io_queue_next | 1 |
+| | io_uring/cancel.c | __must_hold | 10 |
+| | io_uring/io-wq.c | list_del_init | 3 |
+| | io_uring/cancel.c | timespec64_to_ktime | 5 |
+| | io_uring/timeout.c | __io_timeout_prep | 2 |
+| | io_uring/timeout.c | io_match_task | 1 |
+| | io_uring/io-wq.c | ERR_PTR | 2 |
+| | io_uring/io_uring.c | req_ref_put_and_test | 1 |
+| | io_uring/timeout.c | list_for_each_entry_safe | 2 |
+| | io_uring/advise.c | READ_ONCE | 4 |
+| | io_uring/eventfd.c | PTR_ERR | 2 |
+| | io_uring/io-wq.c | INIT_LIST_HEAD | 1 |
+| | io_uring/timeout.c | hweight32 | 2 |
+| | io_uring/eventfd.c | atomic_set | 2 |
+| | io_uring/epoll.c | u64_to_user_ptr | 2 |
+| | io_uring/eventfd.c | IS_ERR | 2 |
+| | io_uring/timeout.c | list_move_tail | 1 |
+| | io_uring/timeout.c | io_flush_killed_timeouts | 2 |
+| | io_uring/io_uring.h | io_for_each_link | 1 |
+| | io_uring/refs.h | data_race | 1 |
+| | io_uring/io_uring.h | io_uring_alloc_async_data | 1 |
+| | io_uring/io_uring.h | req_has_async_data | 1 |
+| | io_uring/io-wq.c | atomic_read | 4 |
+| | io_uring/timeout.c | io_linked_timeout_update | 1 |
+| | io_uring/timeout.c | hrtimer_start | 5 |
+| | io_uring/timeout.c | io_translate_timeout_mode | 2 |
+| | io_uring/timeout.c | io_timeout_finish | 1 |
+| | io_uring/io_uring.h | io_req_queue_tw_complete | 3 |
+| | io_uring/io_uring.h | io_req_task_queue_fail | 1 |
+| | io_uring/timeout.c | io_kill_timeout | 2 |
+| | io_uring/timeout.c | raw_spin_lock_irqsave | 2 |
+| | io_uring/io_uring.c | get_timespec64 | 2 |
+| | io_uring/timeout.h | io_timeout_cancel | 1 |
+| | io_uring/io_uring.h | io_free_req | 1 |
+| | io_uring/msg_ring.c | cmd_to_io_kiocb | 6 |
+| | io_uring/advise.c | io_req_set_res | 5 |
+| | io_uring/cancel.c | spin_unlock | 2 |
+| | io_uring/io_uring.h | io_req_post_cqe | 1 |
+| | io_uring/cancel.h | io_cancel_req_match | 1 |
+| | io_uring/io_uring.c | raw_spin_unlock_irq | 6 |
+| | io_uring/io_uring.c | list_add_tail | 2 |
+| | io_uring/io-wq.c | list_empty | 2 |
+| | io_uring/cancel.c | spin_lock | 2 |
+| | io_uring/timeout.c | io_timeout_extract | 2 |
+| | io_uring/timeout.c | io_is_timeout_noseq | 3 |
+| | io_uring/timeout.c | io_disarm_linked_timeout | 1 |
+| | io_uring/timeout.c | io_remove_next_linked | 3 |
+| | io_uring/io_uring.c | LIST_HEAD | 2 |
+| | io_uring/io_uring.c | io_should_terminate_tw | 1 |
+| | io_uring/advise.c | req_set_fail | 3 |
+| | io_uring/cancel.c | list_for_each_entry | 2 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 14 |
+| | io_uring/futex.c | io_req_task_work_add | 3 |
+| | io_uring/timeout.c | io_timeout_get_clock | 4 |
+| | io_uring/kbuf.c | list_add | 2 |
+| | io_uring/timeout.c | trace_io_uring_fail_link | 1 |
+| | io_uring/io_uring.h | io_req_task_complete | 4 |
+| | io_uring/cancel.c | container_of | 2 |
+| | io_uring/timeout.c | io_fail_links | 1 |
+| | io_uring/io_uring.c | list_del | 2 |
+| | io_uring/advise.c | WARN_ON_ONCE | 2 |
+| | io_uring/timeout.c | io_put_req | 2 |
+| | io_uring/cancel.h | io_try_cancel | 1 |
+| | io_uring/io_uring.c | list_first_entry | 1 |
+| | io_uring/timeout.c | io_timeout_update | 1 |
+| | io_uring/io_uring.c | raw_spin_lock_irq | 8 |
+| | io_uring/timeout.c | list_entry | 1 |
+| | io_uring/timeout.c | hrtimer_try_to_cancel | 4 |
+| | io_uring/timeout.c | hrtimer_setup | 4 |
 
 ### truncate.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| truncate.c | #include <linux/kernel.h> | io_req_set_res | 1 |
-|	 | #include <linux/errno.h>	 | READ_ONCE | 1 |
-|	 | #include <linux/fs.h>	 | do_ftruncate | 1 |
-|	 | #include <linux/file.h>	 | WARN_ON_ONCE | 1 |
-|	 | #include <linux/mm.h>	 | io_kiocb_to_cmd | 2 |
-|    | #include <linux/slab.h>
-|    | #include <linux/syscalls.h>
-|    | #include <linux/io_uring.h>
-|    | #include <uapi/linux/io_uring.h>
-|    | #include "../fs/internal.h"
-|    | #include "io_uring.h"
-|    | #include "truncate.h"	
+| truncate.c | io_uring/advise.c | io_req_set_res | 1 |
+| | io_uring/truncate.c | do_ftruncate | 1 |
+| | io_uring/advise.c | READ_ONCE | 1 |
+| | io_uring/advise.c | WARN_ON_ONCE | 1 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 2 |
 
 ### uring_cmd.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| uring_cmd.c | #include <linux/kernel.h> | io_import_reg_vec | 1 |
-|	 | #include <linux/errno.h>	 | io_req_uring_cleanup | 3 |
-|	 | #include <linux/file.h>	 | hlist_del | 1 |
-|	 | #include <linux/io_uring/cmd.h>	 | uring_cmd | 2 |
-|	 | #include <linux/io_uring/net.h>	 | io_req_queue_iowq | 1 |
-|	 | #include <linux/security.h>	 | KERNEL_SOCKPTR | 1 |
-|	 | #include <linux/nospec.h>	 | io_alloc_cache_vec_kasan | 1 |
-|	 | #include <net/sock.h>	 | USER_SOCKPTR | 2 |
-|	 | #include <uapi/linux/io_uring.h>	 | READ_ONCE | 12 |
-|	 | #include <asm/ioctls.h>	 | io_uring_alloc_async_data | 1 |
-|	 | #include "io_uring.h"	 | io_ring_submit_unlock | 2 |
-|	 | #include "alloc_cache.h"	 | BUILD_BUG_ON | 1 |
-|	 | #include "rsrc.h"	 | memcpy | 1 |
-|	 | #include "uring_cmd.h"	 | io_req_set_cqe32_extra | 1 |
-|	 | 	 | io_req_set_res | 2 |
-|	 | 	 | smp_store_release | 1 |
-|	 | 	 | kfree | 2 |
-|	 | 	 | io_prep_reg_iovec | 1 |
-|	 | 	 | io_alloc_cache_put | 1 |
-|	 | 	 | io_uring_cmd_del_cancelable | 1 |
-|	 | 	 | ioctl | 2 |
-|	 | 	 | io_uring_cmd_prep_setup | 1 |
-|	 | 	 | __io_req_task_work_add | 1 |
-|	 | 	 | cmd_to_io_kiocb | 7 |
-|	 | 	 | hlist_for_each_entry_safe | 1 |
-|	 | 	 | io_should_terminate_tw | 1 |
-|	 | 	 | io_submit_flush_completions | 1 |
-|	 | 	 | io_ring_submit_lock | 2 |
-|	 | 	 | io_req_complete_defer | 1 |
-|	 | 	 | hlist_add_head | 1 |
-|	 | 	 | io_kiocb_to_cmd | 6 |
-|	 | 	 | io_vec_free | 2 |
-|	 | 	 | do_sock_getsockopt | 1 |
-|	 | 	 | u64_to_user_ptr | 2 |
-|	 | 	 | io_req_task_work_add | 1 |
-|	 | 	 | offsetof | 1 |
-|	 | 	 | req_set_fail | 2 |
-|	 | 	 | io_is_compat | 1 |
-|	 | 	 | io_uring_cmd_getsockopt | 1 |
-|	 | 	 | do_sock_setsockopt | 1 |
-|	 | 	 | io_import_reg_buf | 1 |
-|	 | 	 | task_work_cb | 1 |
-|	 | 	 | uring_sqe_size | 1 |
-|	 | 	 | lockdep_assert_held | 1 |
-|	 | 	 | WARN_ON_ONCE | 1 |
-|	 | 	 | security_uring_cmd | 1 |
-|	 | 	 | io_uring_cmd_setsockopt | 1 |
+| uring_cmd.c | io_uring/uring_cmd.c | KERNEL_SOCKPTR | 1 |
+| | io_uring/uring_cmd.c | task_work_cb | 1 |
+| | io_uring/io_uring.h | io_uring_alloc_async_data | 1 |
+| | io_uring/uring_cmd.c | io_req_uring_cleanup | 3 |
+| | io_uring/advise.c | req_set_fail | 2 |
+| | io_uring/futex.c | io_req_task_work_add | 1 |
+| | io_uring/uring_cmd.c | uring_cmd | 2 |
+| | io_uring/alloc_cache.h | io_alloc_cache_put | 1 |
+| | io_uring/alloc_cache.h | kfree | 2 |
+| | io_uring/rsrc.h | io_vec_free | 2 |
+| | io_uring/uring_cmd.c | security_uring_cmd | 1 |
+| | io_uring/io_uring.c | io_should_terminate_tw | 1 |
+| | io_uring/advise.c | READ_ONCE | 12 |
+| | io_uring/rsrc.h | io_import_reg_vec | 1 |
+| | io_uring/epoll.c | u64_to_user_ptr | 2 |
+| | io_uring/advise.c | WARN_ON_ONCE | 1 |
+| | io_uring/io_uring.c | io_req_complete_defer | 1 |
+| | io_uring/net.c | io_alloc_cache_vec_kasan | 1 |
+| | io_uring/io_uring.c | io_submit_flush_completions | 1 |
+| | io_uring/cancel.c | io_ring_submit_lock | 2 |
+| | io_uring/futex.c | hlist_add_head | 1 |
+| | io_uring/uring_cmd.c | do_sock_getsockopt | 1 |
+| | io_uring/io_uring.h | io_req_queue_iowq | 1 |
+| | io_uring/uring_cmd.c | io_uring_cmd_getsockopt | 1 |
+| | io_uring/io_uring.c | offsetof | 1 |
+| | io_uring/uring_cmd.c | ioctl | 2 |
+| | io_uring/uring_cmd.c | do_sock_setsockopt | 1 |
+| | io_uring/uring_cmd.c | io_req_set_cqe32_extra | 1 |
+| | io_uring/uring_cmd.c | io_uring_cmd_del_cancelable | 1 |
+| | io_uring/uring_cmd.c | USER_SOCKPTR | 2 |
+| | io_uring/io_uring.c | smp_store_release | 1 |
+| | io_uring/uring_cmd.c | io_uring_cmd_prep_setup | 1 |
+| | io_uring/io_uring.c | memcpy | 1 |
+| | io_uring/cancel.c | hlist_for_each_entry_safe | 1 |
+| | io_uring/msg_ring.c | cmd_to_io_kiocb | 7 |
+| | io_uring/cancel.c | io_ring_submit_unlock | 2 |
+| | io_uring/io_uring.h | uring_sqe_size | 1 |
+| | io_uring/advise.c | io_req_set_res | 2 |
+| | io_uring/uring_cmd.c | hlist_del | 1 |
+| | io_uring/rsrc.h | io_import_reg_buf | 1 |
+| | io_uring/io_uring.h | io_is_compat | 1 |
+| | io_uring/uring_cmd.c | io_uring_cmd_setsockopt | 1 |
+| | io_uring/io-wq.c | BUILD_BUG_ON | 1 |
+| | io_uring/rsrc.h | io_prep_reg_iovec | 1 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 6 |
+| | io_uring/io_uring.h | __io_req_task_work_add | 1 |
+| | io_uring/cancel.c | lockdep_assert_held | 1 |
 
 ### waitid.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| waitid.c | #include <linux/kernel.h> | list_del_init | 2 |
-|	 | #include <linux/errno.h>	 | BIT | 1 |
-|	 | #include <linux/fs.h>	 | io_waitid_copy_si | 1 |
-|	 | #include <linux/file.h>	 | io_waitid_finish | 2 |
-|	 | #include <linux/compat.h>	 | hlist_del_init | 2 |
-|	 | #include <linux/io_uring.h>	 | io_kiocb_to_cmd | 8 |
-|	 | #include <uapi/linux/io_uring.h>	 | WARN_ON_ONCE | 1 |
-|	 | #include "io_uring.h"	 | init_waitqueue_func_entry | 1 |
-|	 | #include "cancel.h"	 | io_ring_submit_lock | 1 |
-|	 | #include "waitid.h"	 | io_uring_alloc_async_data | 1 |
-|	 | #include "../kernel/exit.h"		 | add_wait_queue | 2 |
-|	 | 	 | atomic_sub_return | 1 |
-|	 | 	 | io_waitid_complete | 2 |
-|	 | 	 | kernel_waitid_prepare | 1 |
-|	 | 	 | io_cancel_remove_all | 1 |
-|	 | 	 | user_write_access_begin | 2 |
-|	 | 	 | atomic_fetch_inc | 2 |
-|	 | 	 | unlikely | 2 |
-|	 | 	 | req_set_fail | 2 |
-|	 | 	 | READ_ONCE | 4 |
-|	 | 	 | container_of | 2 |
-|	 | 	 | io_waitid_drop_issue_ref | 2 |
-|	 | 	 | io_req_task_complete | 1 |
-|	 | 	 | io_ring_submit_unlock | 3 |
-|	 | 	 | spin_unlock_irq | 1 |
-|	 | 	 | remove_wait_queue | 3 |
-|	 | 	 | hlist_add_head | 1 |
-|	 | 	 | io_waitid_compat_copy_si | 1 |
-|	 | 	 | pid_child_should_wake | 1 |
-|	 | 	 | __do_wait | 3 |
-|	 | 	 | user_write_access_end | 2 |
-|	 | 	 | u64_to_user_ptr | 1 |
-|	 | 	 | spin_lock_irq | 1 |
-|	 | 	 | put_pid | 1 |
-|	 | 	 | unsafe_put_user | 12 |
-|	 | 	 | io_req_task_work_add | 2 |
-|	 | 	 | io_cancel_remove | 1 |
-|	 | 	 | lockdep_assert_held | 1 |
-|	 | 	 | atomic_or | 1 |
-|	 | 	 | GENMASK | 1 |
-|	 | 	 | io_req_queue_tw_complete | 1 |
-|	 | 	 | atomic_read | 2 |
-|	 | 	 | io_req_set_res | 2 |
-|	 | 	 | atomic_set | 1 |
-|	 | 	 | io_waitid_free | 1 |
-|	 | 	 | kfree | 1 |
-|	 | 	 | io_is_compat | 1 |
-|	 | 	 | io_tw_lock | 1 |
+| waitid.c | io_uring/cancel.c | io_ring_submit_lock | 1 |
+| | io_uring/advise.c | READ_ONCE | 4 |
+| | io_uring/waitid.c | kernel_waitid_prepare | 1 |
+| | io_uring/eventfd.c | BIT | 1 |
+| | io_uring/poll.c | atomic_fetch_inc | 2 |
+| | io_uring/waitid.c | __do_wait | 3 |
+| | io_uring/io_uring.h | io_is_compat | 1 |
+| | io_uring/advise.c | req_set_fail | 2 |
+| | io_uring/futex.c | io_req_task_work_add | 2 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 8 |
+| | io_uring/eventfd.c | atomic_set | 1 |
+| | io_uring/futex.c | hlist_add_head | 1 |
+| | io_uring/io-wq.c | list_del_init | 2 |
+| | io_uring/advise.c | WARN_ON_ONCE | 1 |
+| | io_uring/cancel.c | hlist_del_init | 2 |
+| | io_uring/io-wq.c | spin_lock_irq | 1 |
+| | io_uring/waitid.c | user_write_access_begin | 2 |
+| | io_uring/io_uring.h | io_req_queue_tw_complete | 1 |
+| | io_uring/waitid.c | io_waitid_finish | 2 |
+| | io_uring/cancel.c | io_ring_submit_unlock | 3 |
+| | io_uring/poll.c | atomic_sub_return | 1 |
+| | io_uring/waitid.c | user_write_access_end | 2 |
+| | io_uring/waitid.c | io_waitid_drop_issue_ref | 2 |
+| | io_uring/alloc_cache.h | kfree | 1 |
+| | io_uring/cancel.c | io_cancel_remove | 1 |
+| | io_uring/cancel.c | container_of | 2 |
+| | io_uring/epoll.c | u64_to_user_ptr | 1 |
+| | io_uring/waitid.c | remove_wait_queue | 3 |
+| | io_uring/waitid.c | pid_child_should_wake | 1 |
+| | io_uring/waitid.c | io_waitid_complete | 2 |
+| | io_uring/waitid.c | put_pid | 1 |
+| | io_uring/cancel.c | lockdep_assert_held | 1 |
+| | io_uring/io-wq.c | atomic_read | 2 |
+| | io_uring/io-wq.c | atomic_or | 1 |
+| | io_uring/waitid.c | io_waitid_copy_si | 1 |
+| | io_uring/waitid.c | io_waitid_free | 1 |
+| | io_uring/io_uring.h | io_uring_alloc_async_data | 1 |
+| | io_uring/waitid.c | io_waitid_compat_copy_si | 1 |
+| | io_uring/waitid.c | unsafe_put_user | 12 |
+| | io_uring/futex.c | io_tw_lock | 1 |
+| | io_uring/poll.c | GENMASK | 1 |
+| | io_uring/cancel.h | io_cancel_remove_all | 1 |
+| | io_uring/io_uring.h | io_req_task_complete | 1 |
+| | io_uring/io_uring.c | init_waitqueue_func_entry | 1 |
+| | io_uring/io-wq.c | spin_unlock_irq | 1 |
+| | io_uring/poll.c | add_wait_queue | 2 |
+| | io_uring/cancel.c | unlikely | 2 |
+| | io_uring/advise.c | io_req_set_res | 2 |
 
 ### xattr.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| xattr.c | #include <linux/kernel.h> | import_xattr_name | 1 |
-|	 | #include <linux/errno.h>	 | READ_ONCE | 10 |
-|	 | #include <linux/fs.h>	 | PTR_ERR | 2 |
-|	 | #include <linux/file.h>	 | __io_setxattr_prep | 2 |
-|	 | #include <linux/mm.h>	 | filename_setxattr | 1 |
-|	 | #include <linux/slab.h>	 | filename_getxattr | 1 |
-|	 | #include <linux/namei.h>	 | setxattr_copy | 1 |
-|	 | #include <linux/io_uring.h>	 | IS_ERR | 2 |
-|	 | #include <linux/xattr.h>	 | __io_getxattr_prep | 2 |
-|	 | #include <uapi/linux/io_uring.h>	 | u64_to_user_ptr | 6 |
-|	 | #include "../fs/internal.h"	 | kmalloc | 2 |
-|	 | #include "io_uring.h"	 | kvfree | 1 |
-|	 | #include "xattr.h"	 | io_kiocb_to_cmd | 9 |
-|	 | 	 | io_req_set_res | 1 |
-|	 | 	 | file_setxattr | 1 |
-|	 | 	 | unlikely | 2 |
-|	 | 	 | putname | 1 |
-|	 | 	 | kfree | 3 |
-|	 | 	 | io_xattr_cleanup | 1 |
-|	 | 	 | io_xattr_finish | 4 |
-|	 | 	 | WARN_ON_ONCE | 4 |
-|	 | 	 | file_getxattr | 1 |
-|	 | 	 | getname | 2 |
+| xattr.c | io_uring/advise.c | READ_ONCE | 10 |
+| | io_uring/alloc_cache.c | kvfree | 1 |
+| | io_uring/advise.c | WARN_ON_ONCE | 4 |
+| | io_uring/alloc_cache.c | kmalloc | 2 |
+| | io_uring/advise.c | io_req_set_res | 1 |
+| | io_uring/xattr.c | filename_getxattr | 1 |
+| | io_uring/fs.c | putname | 1 |
+| | io_uring/epoll.c | u64_to_user_ptr | 6 |
+| | io_uring/advise.c | io_kiocb_to_cmd | 9 |
+| | io_uring/alloc_cache.h | kfree | 3 |
+| | io_uring/cancel.c | unlikely | 2 |
+| | io_uring/xattr.c | file_setxattr | 1 |
+| | io_uring/xattr.c | setxattr_copy | 1 |
+| | io_uring/fs.c | getname | 2 |
+| | io_uring/xattr.c | __io_setxattr_prep | 2 |
+| | io_uring/xattr.c | file_getxattr | 1 |
+| | io_uring/eventfd.c | IS_ERR | 2 |
+| | io_uring/eventfd.c | PTR_ERR | 2 |
+| | io_uring/xattr.c | io_xattr_finish | 4 |
+| | io_uring/xattr.c | __io_getxattr_prep | 2 |
+| | io_uring/opdef.c | io_xattr_cleanup | 1 |
+| | io_uring/xattr.c | import_xattr_name | 1 |
+| | io_uring/xattr.c | filename_setxattr | 1 |
 
 ### zcrx.c
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| zcrx.c | #include <linux/kernel.h> | io_zcrx_copy_chunk | 2 |
-|	 | #include <linux/errno.h>	 | WARN_ON | 2 |
-|	 | #include <linux/dma-map-ops.h>	 | spin_lock_init | 3 |
-|	 | #include <linux/mm.h>	 | page_pool_get_dma_addr_netmem | 2 |
-|	 | #include <linux/mm.h>	 | __io_zcrx_get_free_niov | 2 |
-|	 | #include <linux/io_uring.h>	 | netdev_get_by_index | 1 |
-|	 | #include <linux/netdevice.h>	 | put_device | 1 |
-|	 | #include <linux/rtnetlink.h>	 | kfree | 2 |
-|	 | 	#include <linux/skbuff_ref.h> | spin_lock_bh | 4 |
-|	 | #include <net/page_pool/helpers.h>	 | io_close_queue | 2 |
-|	 | #include <net/page_pool/memory_provider.h>	 | atomic_inc | 1 |
-|	 | #include <net/netlink.h>	 | page_pool_ref_netmem | 1 |
-|	 | #include <net/netdev_rx_queue.h>	 | min | 1 |
-|	 | #include <net/tcp.h>	 | get_device | 1 |
-|	 | #include <net/rps.h>	 | io_zcrx_tcp_recvmsg | 1 |
-|	 | 	#include <trace/events/page_pool.h> | io_zcrx_recv_skb | 1 |
-|	 | #include <uapi/linux/io_uring.h>	 | io_pin_pages | 1 |
-|	 | #include "io_uring.h"	 | io_create_region_mmap_safe | 1 |
-|	 | #include "kbuf.h"	 | io_buffer_validate | 1 |
-|	 | #include "memmap.h"	 | spin_unlock_bh | 2 |
-|	 | 	#include "zcrx.h" | kvfree | 4 |
-|	 | #include "rsrc.h"	 | WARN_ON_ONCE | 5 |
-|	 | 	 | io_zcrx_alloc_fallback | 1 |
-|	 | 	 | min_t | 4 |
-|	 | 	 | spin_unlock | 2 |
-|	 | 	 | skb_shinfo | 2 |
-|	 | 	 | net_iov_to_netmem | 8 |
-|	 | 	 | container_of | 1 |
-|	 | 	 | memcpy | 1 |
-|	 | 	 | smp_load_acquire | 1 |
-|	 | 	 | skb_frag_off | 2 |
-|	 | 	 | skb_frag_page | 1 |
-|	 | 	 | lock_sock | 1 |
-|	 | 	 | sock_rps_record_flow | 1 |
-|	 | 	 | io_zcrx_put_niov_uref | 1 |
-|	 | 	 | percpu_ref_get | 1 |
-|	 | 	 | io_free_region | 1 |
-|	 | 	 | netmem_is_net_iov | 1 |
-|	 | 	 | io_zcrx_queue_cqe | 2 |
-|	 | 	 | PTR_ERR | 1 |
-|	 | 	 | sock_error | 1 |
-|	 | 	 | netdev_put | 2 |
-|	 | 	 | kunmap_local | 2 |
-|	 | 	 | io_zcrx_map_area | 1 |
-|	 | 	 | page_pool_unref_netmem | 2 |
-|	 | 	 | dma_dev_need_sync | 1 |
-|	 | 	 | spin_lock | 2 |
-|	 | 	 | io_zcrx_ifq_alloc | 1 |
-|	 | 	 | io_allocate_rbuf_ring | 1 |
-|	 | 	 | atomic_read | 2 |
-|	 | 	 | skb_frag_is_net_iov | 1 |
-|	 | 	 | io_zcrx_scrub | 1 |
-|	 | 	 | smp_store_release | 1 |
-|	 | 	 | array_index_nospec | 1 |
-|	 | 	 | atomic_set | 1 |
-|	 | 	 | io_zcrx_return_niov_freelist | 2 |
-|	 | 	 | net_mp_niov_set_page_pool | 1 |
-|	 | 	 | lockdep_assert_held | 3 |
-|	 | 	 | u64_to_user_ptr | 5 |
-|	 | 	 | release_sock | 1 |
-|	 | 	 | tcp_read_sock | 1 |
-|	 | 	 | io_zcrx_ring_refill | 1 |
-|	 | 	 | page_pool_fragment_netmem | 1 |
-|	 | 	 | skb_walk_frags | 1 |
-|	 | 	 | sock_flag | 2 |
-|	 | 	 | io_zcrx_free_area | 2 |
-|	 | 	 | net_mp_close_rxq | 1 |
-|	 | 	 | kvmalloc_array | 3 |
-|	 | 	 | io_zcrx_copy_frag | 1 |
-|	 | 	 | capable | 1 |
-|	 | 	 | io_get_user_counter | 4 |
-|	 | 	 | io_zcrx_ifq_free | 2 |
-|	 | 	 | io_zcrx_recv_frag | 1 |
-|	 | 	 | io_zcrx_drop_netdev | 2 |
-|	 | 	 | unpin_user_pages | 1 |
-|	 | 	 | net_mp_niov_clear_page_pool | 1 |
-|	 | 	 | skb_frag_size | 1 |
-|	 | 	 | skb_headlen | 4 |
-|	 | 	 | likely | 1 |
-|	 | 	 | io_region_get_ptr | 1 |
-|	 | 	 | nla_nest_start | 1 |
-|	 | 	 | io_zcrx_rqring_entries | 1 |
-|	 | 	 | kmap_local_page | 2 |
-|	 | 	 | READ_ONCE | 1 |
-|	 | 	 | net_mp_niov_set_dma_addr | 2 |
-|	 | 	 | io_defer_get_uncommited_cqe | 1 |
-|	 | 	 | netmem_to_net_iov | 2 |
-|	 | 	 | dma_map_page_attrs | 1 |
-|	 | 	 | atomic_dec | 1 |
-|	 | 	 | skb_frag_foreach_page | 1 |
-|	 | 	 | dma_mapping_error | 1 |
-|	 | 	 | IS_ERR | 1 |
-|	 | 	 | kzalloc | 2 |
-|	 | 	 | page_pool_put_unrefed_netmem | 1 |
-|	 | 	 | net_mp_open_rxq | 1 |
-|	 | 	 | copy_to_user | 3 |
-|	 | 	 | dma_unmap_page_attrs | 2 |
-|	 | 	 | unlikely | 10 |
-|	 | 	 | io_zcrx_get_rqe | 1 |
-|	 | 	 | net_iov_owner | 1 |
-|	 | 	 | io_zcrx_get_niov_uref | 2 |
-|	 | 	 | memchr_inv | 1 |
-|	 | 	 | nla_nest_end | 1 |
-|	 | 	 | io_zcrx_return_niov | 3 |
-|	 | 	 | io_zcrx_iov_page | 1 |
-|	 | 	 | io_zcrx_refill_slow | 1 |
-|	 | 	 | roundup_pow_of_two | 1 |
-|	 | 	 | io_zcrx_iov_to_area | 4 |
-|	 | 	 | __dma_sync_single_for_device | 1 |
-|	 | 	 | percpu_ref_put | 1 |
-|	 | 	 | io_zcrx_sync_for_device | 2 |
-|	 | 	 | io_free_rbuf_ring | 1 |
-|	 | 	 | io_zcrx_unmap_area | 1 |
-|	 | 	 | net_iov_idx | 4 |
-|	 | 	 | __io_zcrx_unmap_area | 2 |
-|	 | 	 | io_zcrx_create_area | 1 |
-|	 | 	 | copy_from_user | 3 |
-|	 | 	 | net_mp_netmem_place_in_cache | 2 |
-|	 | 	 | atomic_xchg | 1 |
-|	 | 	 | offsetof | 2 |
+| zcrx.c | io_uring/zcrx.c | page_pool_ref_netmem | 1 |
+| | io_uring/eventfd.c | PTR_ERR | 1 |
+| | io_uring/zcrx.c | io_zcrx_ifq_free | 2 |
+| | io_uring/zcrx.c | net_iov_owner | 1 |
+| | io_uring/zcrx.c | spin_unlock_bh | 2 |
+| | io_uring/io_uring.h | io_defer_get_uncommited_cqe | 1 |
+| | io_uring/alloc_cache.h | kfree | 2 |
+| | io_uring/zcrx.c | io_zcrx_sync_for_device | 2 |
+| | io_uring/zcrx.c | lock_sock | 1 |
+| | io_uring/eventfd.c | IS_ERR | 1 |
+| | io_uring/rsrc.h | io_buffer_validate | 1 |
+| | io_uring/zcrx.c | dma_dev_need_sync | 1 |
+| | io_uring/io_uring.c | percpu_ref_get | 1 |
+| | io_uring/zcrx.c | io_zcrx_alloc_fallback | 1 |
+| | io_uring/cancel.c | copy_from_user | 3 |
+| | io_uring/zcrx.c | io_zcrx_get_niov_uref | 2 |
+| | io_uring/io-wq.c | kzalloc | 2 |
+| | io_uring/zcrx.c | net_mp_close_rxq | 1 |
+| | io_uring/alloc_cache.c | kvfree | 4 |
+| | io_uring/zcrx.c | netmem_is_net_iov | 1 |
+| | io_uring/zcrx.c | io_zcrx_copy_frag | 1 |
+| | io_uring/zcrx.c | io_zcrx_copy_chunk | 2 |
+| | io_uring/zcrx.c | kunmap_local | 2 |
+| | io_uring/zcrx.c | put_device | 1 |
+| | io_uring/zcrx.c | io_zcrx_iov_to_area | 4 |
+| | io_uring/io_uring.c | copy_to_user | 3 |
+| | io_uring/zcrx.c | skb_headlen | 4 |
+| | io_uring/zcrx.c | io_zcrx_ifq_alloc | 1 |
+| | io_uring/zcrx.c | spin_lock_bh | 4 |
+| | io_uring/zcrx.c | io_zcrx_ring_refill | 1 |
+| | io_uring/net.c | skb_shinfo | 2 |
+| | io_uring/io_uring.c | capable | 1 |
+| | io_uring/memmap.h | io_pin_pages | 1 |
+| | io_uring/memmap.h | io_create_region_mmap_safe | 1 |
+| | io_uring/zcrx.c | netdev_get_by_index | 1 |
+| | io_uring/io_uring.c | min_t | 4 |
+| | io_uring/epoll.c | u64_to_user_ptr | 5 |
+| | io_uring/zcrx.c | net_mp_niov_set_page_pool | 1 |
+| | io_uring/zcrx.c | io_zcrx_refill_slow | 1 |
+| | io_uring/zcrx.c | release_sock | 1 |
+| | io_uring/zcrx.c | io_zcrx_tcp_recvmsg | 1 |
+| | io_uring/zcrx.c | net_mp_netmem_place_in_cache | 2 |
+| | io_uring/zcrx.c | io_zcrx_create_area | 1 |
+| | io_uring/memmap.h | io_free_region | 1 |
+| | io_uring/io-wq.c | atomic_read | 2 |
+| | io_uring/fdinfo.c | min | 1 |
+| | io_uring/zcrx.c | io_allocate_rbuf_ring | 1 |
+| | io_uring/zcrx.c | io_free_rbuf_ring | 1 |
+| | io_uring/zcrx.c | io_zcrx_free_area | 2 |
+| | io_uring/net.c | sock_error | 1 |
+| | io_uring/zcrx.c | io_zcrx_scrub | 1 |
+| | io_uring/io-wq.c | atomic_inc | 1 |
+| | io_uring/io_uring.c | smp_store_release | 1 |
+| | io_uring/zcrx.c | kmap_local_page | 2 |
+| | io_uring/zcrx.c | dma_map_page_attrs | 1 |
+| | io_uring/zcrx.c | page_pool_fragment_netmem | 1 |
+| | io_uring/zcrx.c | skb_walk_frags | 1 |
+| | io_uring/zcrx.c | page_pool_get_dma_addr_netmem | 2 |
+| | io_uring/eventfd.c | atomic_set | 1 |
+| | io_uring/zcrx.c | io_zcrx_drop_netdev | 2 |
+| | io_uring/zcrx.c | net_mp_niov_clear_page_pool | 1 |
+| | io_uring/zcrx.c | io_zcrx_get_rqe | 1 |
+| | io_uring/zcrx.c | net_mp_open_rxq | 1 |
+| | io_uring/advise.c | WARN_ON_ONCE | 5 |
+| | io_uring/zcrx.c | io_zcrx_recv_skb | 1 |
+| | io_uring/zcrx.c | netdev_put | 2 |
+| | io_uring/cancel.c | container_of | 1 |
+| | io_uring/zcrx.c | io_get_user_counter | 4 |
+| | io_uring/zcrx.c | io_zcrx_queue_cqe | 2 |
+| | io_uring/io_uring.c | spin_lock_init | 3 |
+| | io_uring/zcrx.c | page_pool_put_unrefed_netmem | 1 |
+| | io_uring/alloc_cache.c | kvmalloc_array | 3 |
+| | io_uring/memmap.c | unpin_user_pages | 1 |
+| | io_uring/zcrx.c | sock_flag | 2 |
+| | io_uring/zcrx.c | io_zcrx_put_niov_uref | 1 |
+| | io_uring/zcrx.c | skb_frag_is_net_iov | 1 |
+| | io_uring/zcrx.c | __io_zcrx_unmap_area | 2 |
+| | io_uring/zcrx.c | io_zcrx_recv_frag | 1 |
+| | io_uring/zcrx.c | netmem_to_net_iov | 2 |
+| | io_uring/zcrx.c | skb_frag_size | 1 |
+| | io_uring/zcrx.c | io_zcrx_return_niov | 3 |
+| | io_uring/io_uring.c | memcpy | 1 |
+| | io_uring/cancel.c | lockdep_assert_held | 3 |
+| | io_uring/zcrx.c | dma_unmap_page_attrs | 2 |
+| | io_uring/zcrx.c | skb_frag_foreach_page | 1 |
+| | io_uring/zcrx.c | nla_nest_end | 1 |
+| | io_uring/zcrx.c | sock_rps_record_flow | 1 |
+| | io_uring/io_uring.c | roundup_pow_of_two | 1 |
+| | io_uring/io-wq.c | likely | 1 |
+| | io_uring/zcrx.c | nla_nest_start | 1 |
+| | io_uring/zcrx.c | io_zcrx_map_area | 1 |
+| | io_uring/zcrx.c | io_zcrx_iov_page | 1 |
+| | io_uring/io_uring.c | io_region_get_ptr | 1 |
+| | io_uring/zcrx.c | dma_mapping_error | 1 |
+| | io_uring/zcrx.c | io_close_queue | 2 |
+| | io_uring/zcrx.c | skb_frag_page | 1 |
+| | io_uring/cancel.c | spin_lock | 2 |
+| | io_uring/zcrx.c | WARN_ON | 2 |
+| | io_uring/zcrx.c | __io_zcrx_get_free_niov | 2 |
+| | io_uring/zcrx.c | tcp_read_sock | 1 |
+| | io_uring/io_uring.c | array_index_nospec | 1 |
+| | io_uring/cancel.c | spin_unlock | 2 |
+| | io_uring/zcrx.c | net_mp_niov_set_dma_addr | 2 |
+| | io_uring/io_uring.h | smp_load_acquire | 1 |
+| | io_uring/io_uring.c | offsetof | 2 |
+| | io_uring/cancel.c | unlikely | 10 |
+| | io_uring/zcrx.c | get_device | 1 |
+| | io_uring/io-wq.c | atomic_dec | 1 |
+| | io_uring/zcrx.c | net_iov_to_netmem | 8 |
+| | io_uring/zcrx.c | io_zcrx_return_niov_freelist | 2 |
+| | io_uring/zcrx.c | io_zcrx_rqring_entries | 1 |
+| | io_uring/zcrx.c | __dma_sync_single_for_device | 1 |
+| | io_uring/zcrx.c | atomic_xchg | 1 |
+| | io_uring/zcrx.c | net_iov_idx | 4 |
+| | io_uring/io_uring.c | percpu_ref_put | 1 |
+| | io_uring/zcrx.c | io_zcrx_unmap_area | 1 |
+| | io_uring/advise.c | READ_ONCE | 1 |
+| | io_uring/zcrx.c | skb_frag_off | 2 |
+| | io_uring/zcrx.c | page_pool_unref_netmem | 2 |
+| | io_uring/memmap.c | memchr_inv | 1 |
 
 ### Headers
 
@@ -1914,13 +1905,13 @@
 ### tctx.h
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| tctx.h | 	 | __io_uring_add_tctx_node_from_submit | 1 |
-|	 | 	 | likely | 1 |
+| tctx.h | io_uring/tctx.h | __io_uring_add_tctx_node_from_submit | 1 |
+| | io_uring/io-wq.c | likely | 1 |
 
 ### timeout.h
 | Source | Library | Function Utilized | Times Used |
 |--------|---------|-------------------|------------|
-| timeout.h | 	 | __io_disarm_linked_timeout | 1 |
+| timeout.h | io_uring/timeout.h | __io_disarm_linked_timeout | 1 |
 
 ### truncate.h
 | Source | Library | Function Utilized | Times Used |
