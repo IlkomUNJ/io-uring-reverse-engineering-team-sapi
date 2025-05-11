@@ -20,7 +20,7 @@ Score is mainly calculated from individual contributions made to the commit. The
 - Abraham Basmah Rahmatullah - 1313623056
 
 ## Link to the answer of each task
-- [Task 1](/task%201/README.MD)
-- [Task 2](/task%202/README.MD)
-- [Task 3](/task%203/README.MD)
-- [Task 4](/task%204/README.MD)
+- [Task 1 Answer](/task%201/README.MD)
+- [Task 2 Answer](/task%202/README.MD)
+- [Task 3 Answer](/task%203/README.MD)
+- [Task 4 Answer](/task%204/README.MD)

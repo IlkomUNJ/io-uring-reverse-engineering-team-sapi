@@ -10,3 +10,6 @@ Store io_madvice & io_fadvice structures, both have the same exact attributes. W
 ## Headers
 ### advice.h
 Just declare the function specification. 
+
+# Answer Link
+[Task 1 Answer](/task%201/README.MD)
