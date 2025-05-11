@@ -19,6 +19,6 @@ Score is mainly calculated from individual contributions made to the commit. The
 - Hafizh Laththuf Muhammad - 1313623005
 - Abraham Basmah Rahmatullah - 1313623056
 
-## Link to the answe of each task
+## Link to the answer of each task
 - [Task 1](/task%201/README.MD)
 - [Task 2](/task%202/README.MD)
