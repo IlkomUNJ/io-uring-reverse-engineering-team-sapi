@@ -14,5 +14,7 @@ Score is mainly calculated from individual contributions made to the commit. The
 - [Task 4](/function_documentation.md)
 
 ## Team Members
-- Member A
-- Member B
+- Adhitya Wardhana - 1313623008
+- Muhammad Fikri Firmansyah - 1313623054
+- Hafizh Laththuf Muhammad - 1313623005
+- Abraham Basmah Rahmatullah - 1313623056
