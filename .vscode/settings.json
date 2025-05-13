@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "truncate.h": "c",
+        "random": "c",
+        "xattr.h": "c"
+    }
+}

@@ -6,6 +6,10 @@ struct io_tctx_node {
 	struct io_ring_ctx	*ctx;
 };
 
+/*
+ This is the task context for io_uring. It contains the task_struct
+ and the io_ring_ctx associated with it.
+*/
 int io_uring_alloc_task_context(struct task_struct *task,
 				struct io_ring_ctx *ctx);
 void io_uring_del_tctx_node(unsigned long index);

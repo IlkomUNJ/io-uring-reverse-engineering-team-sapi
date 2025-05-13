@@ -35,6 +35,13 @@ static struct io_rsrc_node *io_sqe_buffer_register(struct io_ring_ctx *ctx,
 
 #define IO_CACHED_BVECS_SEGS	32
 
+/*
+  We need to account for the number of pages we have pinned
+  in the user space. This is done by using the rlimit for
+  RLIMIT_MEMLOCK, which is the maximum number of pages that
+  can be locked in memory.
+ */
+*/
 int __io_account_mem(struct user_struct *user, unsigned long nr_pages)
 {
 	unsigned long page_limit, cur_pages, new_pages;
@@ -55,6 +62,12 @@ int __io_account_mem(struct user_struct *user, unsigned long nr_pages)
 	return 0;
 }
 
+/*
+  Unaccount for the number of pages we have pinned in the user space.
+  This is done by using the rlimit for RLIMIT_MEMLOCK, which is the
+  maximum number of pages that can be locked in memory.
+ */
+*/
 static void io_unaccount_mem(struct io_ring_ctx *ctx, unsigned long nr_pages)
 {
 	if (ctx->user)
@@ -64,6 +77,11 @@ static void io_unaccount_mem(struct io_ring_ctx *ctx, unsigned long nr_pages)
 		atomic64_sub(nr_pages, &ctx->mm_account->pinned_vm);
 }
 
+/*
+  Account for the number of pages we have pinned in the user space.
+  This is done by using the rlimit for RLIMIT_MEMLOCK, which is the
+  maximum number of pages that can be locked in memory.
+*/
 static int io_account_mem(struct io_ring_ctx *ctx, unsigned long nr_pages)
 {
 	int ret;
@@ -80,6 +98,10 @@ static int io_account_mem(struct io_ring_ctx *ctx, unsigned long nr_pages)
 	return 0;
 }
 
+/*
+  Validate the iovec structure. This is done by checking if the
+  base address is not NULL and if the length is not zero.
+*/
 int io_buffer_validate(struct iovec *iov)
 {
 	unsigned long tmp, acct_len = iov->iov_len + (PAGE_SIZE - 1);
@@ -104,6 +126,11 @@ int io_buffer_validate(struct iovec *iov)
 	return 0;
 }
 
+/*
+  Pin the user pages in memory. This is done by using the
+  get_user_pages() function. The pages are pinned in the
+  user space and can be used for IO operations.
+*/
 static void io_release_ubuf(void *priv)
 {
 	struct io_mapped_ubuf *imu = priv;
@@ -113,6 +140,10 @@ static void io_release_ubuf(void *priv)
 		unpin_user_page(imu->bvec[i].bv_page);
 }
 
+/*
+  Allocate a new io_mapped_ubuf structure. This is done by allocating a new struct io_mapped_ubuf structure and pinning
+  the user pages in memory. The pages are pinned in the user space and can be used for IO operations.
+*/
 static struct io_mapped_ubuf *io_alloc_imu(struct io_ring_ctx *ctx,
 					   int nr_bvecs)
 {
@@ -122,6 +153,12 @@ static struct io_mapped_ubuf *io_alloc_imu(struct io_ring_ctx *ctx,
 			GFP_KERNEL);
 }
 
+/*
+  Free the io_mapped_ubuf structure. This is done by freeing the
+  struct io_mapped_ubuf structure and unpinning the user pages
+  in memory. The pages are unpinned in the user space and can
+  no longer be used for IO operations.
+*/
 static void io_free_imu(struct io_ring_ctx *ctx, struct io_mapped_ubuf *imu)
 {
 	if (imu->nr_bvecs <= IO_CACHED_BVECS_SEGS)
@@ -130,6 +167,11 @@ static void io_free_imu(struct io_ring_ctx *ctx, struct io_mapped_ubuf *imu)
 		kvfree(imu);
 }
 
+/*
+  Map the user pages in memory. This is done by using the
+  get_user_pages() function. The pages are pinned in the
+  user space and can be used for IO operations.
+*/
 static void io_buffer_unmap(struct io_ring_ctx *ctx, struct io_mapped_ubuf *imu)
 {
 	if (!refcount_dec_and_test(&imu->refs))
@@ -141,6 +183,10 @@ static void io_buffer_unmap(struct io_ring_ctx *ctx, struct io_mapped_ubuf *imu)
 	io_free_imu(ctx, imu);
 }
 
+/*
+  Allocate a new io_rsrc_node structure. This is done by allocating
+  a new struct io_rsrc_node structure and initializing the fields.
+*/
 struct io_rsrc_node *io_rsrc_node_alloc(struct io_ring_ctx *ctx, int type)
 {
 	struct io_rsrc_node *node;
@@ -155,6 +201,12 @@ struct io_rsrc_node *io_rsrc_node_alloc(struct io_ring_ctx *ctx, int type)
 	return node;
 }
 
+/*
+  Free the io_rsrc_node structure. This is done by freeing the
+  struct io_rsrc_node structure and unpinning the user pages
+  in memory. The pages are unpinned in the user space and can
+  no longer be used for IO operations.
+*/
 bool io_rsrc_cache_init(struct io_ring_ctx *ctx)
 {
 	const int imu_cache_size = struct_size_t(struct io_mapped_ubuf, bvec,
@@ -169,12 +221,20 @@ bool io_rsrc_cache_init(struct io_ring_ctx *ctx)
 	return ret;
 }
 
+/*
+ This function frees the memory allocated for two caches (node_cache and imu_cache) in the io_ring_ctx structure, 
+ using the io_alloc_cache_free function and the kfree function to release the memory.
+*/
 void io_rsrc_cache_free(struct io_ring_ctx *ctx)
 {
 	io_alloc_cache_free(&ctx->node_cache, kfree);
 	io_alloc_cache_free(&ctx->imu_cache, kfree);
 }
 
+/* 
+ This function io_rsrc_data_free releases resources associated with io_rsrc_data. 
+ It iterates over the nodes array, freeing each non-NULL node using io_put_rsrc_node, then frees the nodes array itself using kvfree. Finally, it resets the nodes pointer and count (nr) to zero.
+*/
 __cold void io_rsrc_data_free(struct io_ring_ctx *ctx,
 			      struct io_rsrc_data *data)
 {
@@ -189,6 +249,10 @@ __cold void io_rsrc_data_free(struct io_ring_ctx *ctx,
 	data->nr = 0;
 }
 
+/*
+  Allocate a new io_rsrc_data structure. This is done by allocating
+  a new struct io_rsrc_data structure and initializing the fields.
+*/
 __cold int io_rsrc_data_alloc(struct io_rsrc_data *data, unsigned nr)
 {
 	data->nodes = kvmalloc_array(nr, sizeof(struct io_rsrc_node *),
@@ -200,6 +264,11 @@ __cold int io_rsrc_data_alloc(struct io_rsrc_data *data, unsigned nr)
 	return -ENOMEM;
 }
 
+/*
+ The function iterates over the update data, copying file descriptors and tags from user space to kernel space. 
+ It then updates the corresponding file table entries in the io_uring context, replacing old file descriptors with new ones and setting tags as needed.
+ The function returns the number of successfully updated file descriptors, or an error code if any of the updates fail.
+*/
 static int __io_sqe_files_update(struct io_ring_ctx *ctx,
 				 struct io_uring_rsrc_update2 *up,
 				 unsigned nr_args)
@@ -265,6 +334,10 @@ static int __io_sqe_files_update(struct io_ring_ctx *ctx,
 	return done ? done : err;
 }
 
+/*
+  This function updates the buffer table in the io_uring context. It iterates over the update data, copying iovec structures and tags from user space to kernel space. 
+  It then registers the buffers and updates the buffer table entries in the io_uring context, replacing old buffers with new ones and setting tags as needed.
+*/
 static int __io_sqe_buffers_update(struct io_ring_ctx *ctx,
 				   struct io_uring_rsrc_update2 *up,
 				   unsigned int nr_args)
@@ -322,6 +395,11 @@ static int __io_sqe_buffers_update(struct io_ring_ctx *ctx,
 	return done ? done : err;
 }
 
+/*
+  This function registers a resource update in the io_uring context. It takes the context, the type of resource, 
+  the update data, and the number of arguments as input. It checks for overflow and calls the appropriate function
+  to update the resource table based on the type (file or buffer).
+*/
 static int __io_register_rsrc_update(struct io_ring_ctx *ctx, unsigned type,
 				     struct io_uring_rsrc_update2 *up,
 				     unsigned nr_args)
@@ -342,6 +420,10 @@ static int __io_register_rsrc_update(struct io_ring_ctx *ctx, unsigned type,
 	return -EINVAL;
 }
 
+/*
+  This function updates the file table in the io_uring context. It takes the context, the update data, and the number of arguments as input. 
+  It checks for overflow and calls the __io_register_rsrc_update function to update the file table entries based on the update data.
+*/
 int io_register_files_update(struct io_ring_ctx *ctx, void __user *arg,
 			     unsigned nr_args)
 {
@@ -357,6 +439,10 @@ int io_register_files_update(struct io_ring_ctx *ctx, void __user *arg,
 	return __io_register_rsrc_update(ctx, IORING_RSRC_FILE, &up, nr_args);
 }
 
+/*
+  This function updates the buffer table in the io_uring context. It takes the context, the update data, and the number of arguments as input. 
+  It checks for overflow and calls the __io_register_rsrc_update function to update the buffer table entries based on the update data.
+*/
 int io_register_rsrc_update(struct io_ring_ctx *ctx, void __user *arg,
 			    unsigned size, unsigned type)
 {
@@ -371,6 +457,10 @@ int io_register_rsrc_update(struct io_ring_ctx *ctx, void __user *arg,
 	return __io_register_rsrc_update(ctx, type, &up, up.nr);
 }
 
+/*
+  This function registers a resource in the io_uring context. It takes the context, the update data, the size of the data, and the type of resource as input. 
+  It checks for overflow and calls the appropriate function to register the resource based on the type (file or buffer).
+*/
 __cold int io_register_rsrc(struct io_ring_ctx *ctx, void __user *arg,
 			    unsigned int size, unsigned int type)
 {
@@ -403,6 +493,10 @@ __cold int io_register_rsrc(struct io_ring_ctx *ctx, void __user *arg,
 	return -EINVAL;
 }
 
+/*
+  This function prepares the io_uring command for updating files. It takes the request and the submission queue entry as input. 
+  It checks for invalid flags and sets the offset, number of arguments, and argument pointer based on the submission queue entry.
+*/
 int io_files_update_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_rsrc_update *up = io_kiocb_to_cmd(req, struct io_rsrc_update);
@@ -420,6 +514,10 @@ int io_files_update_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+  This function updates the file table in the io_uring context. It takes the request and the issue flags as input. 
+  It iterates over the update data, copying file descriptors from user space to kernel space, and registers the files in the file table.
+*/
 static int io_files_update_with_index_alloc(struct io_kiocb *req,
 					    unsigned int issue_flags)
 {
@@ -459,6 +557,10 @@ static int io_files_update_with_index_alloc(struct io_kiocb *req,
 	return ret;
 }
 
+/*
+  This function updates the file table in the io_uring context. It takes the request and the issue flags as input. 
+  It checks for invalid flags and calls the __io_register_rsrc_update function to update the file table entries based on the update data.
+*/
 int io_files_update(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_rsrc_update *up = io_kiocb_to_cmd(req, struct io_rsrc_update);
@@ -488,6 +590,10 @@ int io_files_update(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+  This function frees the io_rsrc_node structure. It takes the context and the node as input. 
+  It checks for the type of resource (file or buffer) and frees the corresponding resource.
+*/
 void io_free_rsrc_node(struct io_ring_ctx *ctx, struct io_rsrc_node *node)
 {
 	if (node->tag)
@@ -508,6 +614,10 @@ void io_free_rsrc_node(struct io_ring_ctx *ctx, struct io_rsrc_node *node)
 	io_cache_free(&ctx->node_cache, node);
 }
 
+/*
+  This function unregisters the file table in the io_uring context. It takes the context as input and frees the file table resources.
+  It also sets the allocation range to zero.
+*/
 int io_sqe_files_unregister(struct io_ring_ctx *ctx)
 {
 	if (!ctx->file_table.data.nr)
@@ -518,6 +628,11 @@ int io_sqe_files_unregister(struct io_ring_ctx *ctx)
 	return 0;
 }
 
+/*
+This function, io_sqe_files_register, registers a set of files with an io_uring context. It takes a list of file descriptors (fds) and optional tags, and associates them with the context's file table. 
+The function performs various checks, such as ensuring the context's file table is not already populated, and that the number of files does not exceed certain limits. It then iterates over the list of file descriptors, checks their validity, and allocates a new io_rsrc_node for each file. 
+If any errors occur during this process, the function unregisters the file table and returns an error code.
+*/
 int io_sqe_files_register(struct io_ring_ctx *ctx, void __user *arg,
 			  unsigned nr_args, u64 __user *tags)
 {
@@ -587,6 +702,10 @@ fail:
 	return ret;
 }
 
+/*
+ This function unregisters SQE (Submission Queue Entry) buffers for a given io_ring_ctx. If there are no buffers to unregister (ctx->buf_table.nr is 0), it returns an error (-ENXIO). 
+ Otherwise, it frees the buffer table resources using io_rsrc_data_free and returns success (0).
+*/
 int io_sqe_buffers_unregister(struct io_ring_ctx *ctx)
 {
 	if (!ctx->buf_table.nr)
@@ -636,6 +755,12 @@ static bool headpage_already_acct(struct io_ring_ctx *ctx, struct page **pages,
 	return false;
 }
 
+/*
+  This function accounts for the number of pages that are pinned in the user space. 
+  It takes the context, the pages, the number of pages, the io_mapped_ubuf structure, and the last head page as input.
+  It checks if the pages are compound and if they have already been accounted for. 
+  If not, it accounts for them and returns the result.
+*/
 static int io_buffer_account_pin(struct io_ring_ctx *ctx, struct page **pages,
 				 int nr_pages, struct io_mapped_ubuf *imu,
 				 struct page **last_hpage)
@@ -668,6 +793,10 @@ static int io_buffer_account_pin(struct io_ring_ctx *ctx, struct page **pages,
 	return ret;
 }
 
+/*
+  This function coalesces the buffer pages into a single page. It takes the pages, the number of pages, and the io_imu_folio_data structure as input. 
+  It checks if the pages are contiguous and if they can be coalesced into a single page. If so, it updates the pages and the number of pages accordingly.
+*/
 static bool io_coalesce_buffer(struct page ***pages, int *nr_pages,
 				struct io_imu_folio_data *data)
 {
@@ -710,6 +839,11 @@ static bool io_coalesce_buffer(struct page ***pages, int *nr_pages,
 	return true;
 }
 
+/*
+  This function checks if the buffer pages can be coalesced into a single page. 
+  It takes the pages, the number of pages, and the io_imu_folio_data structure as input. 
+  It checks if the pages are contiguous and if they can be coalesced into a single page.
+*/
 bool io_check_coalesce_buffer(struct page **page_array, int nr_pages,
 			      struct io_imu_folio_data *data)
 {
@@ -756,6 +890,10 @@ bool io_check_coalesce_buffer(struct page **page_array, int nr_pages,
 	return true;
 }
 
+/*
+ This C function, io_sqe_buffer_register, registers a buffer for use with the io_uring API. It takes a context (ctx), an I/O vector (iov), and a pointer to a page (last_hpage) as input.
+ It allocates a node for the buffer, pins the pages, and registers the buffer with the context.
+*/
 static struct io_rsrc_node *io_sqe_buffer_register(struct io_ring_ctx *ctx,
 						   struct iovec *iov,
 						   struct page **last_hpage)
@@ -837,6 +975,10 @@ done:
 	return node;
 }
 
+/*
+ This function, io_sqe_buffers_register, registers a list of buffers with an io_uring context (ctx). It takes in a list of nr_args buffer descriptions (arg) and optional tags (tags), and returns an error code.
+ It first checks if the context already has buffers registered, and if the number of arguments is valid.
+*/
 int io_sqe_buffers_register(struct io_ring_ctx *ctx, void __user *arg,
 			    unsigned int nr_args, u64 __user *tags)
 {
@@ -907,6 +1049,11 @@ int io_sqe_buffers_register(struct io_ring_ctx *ctx, void __user *arg,
 	return ret;
 }
 
+/*
+ This function registers a buffer vector with an io_uring command (cmd) and a request (rq). 
+ It takes in a release function, an index, and issue flags as input. It allocates a new io_rsrc_node structure, 
+ pins the pages, and registers the buffer with the context. It returns an error code if any issues occur during the process.
+*/
 int io_buffer_register_bvec(struct io_uring_cmd *cmd, struct request *rq,
 			    void (*release)(void *), unsigned int index,
 			    unsigned int issue_flags)
@@ -969,6 +1116,10 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(io_buffer_register_bvec);
 
+/*
+ This function, io_buffer_unregister_bvec, unregisters a buffer vector from an io_uring command. It takes a command (cmd), an index (index), and issue flags (issue_flags) as input. 
+ It returns an error code if any issues occur during the process.
+*/
 int io_buffer_unregister_bvec(struct io_uring_cmd *cmd, unsigned int index,
 			      unsigned int issue_flags)
 {
@@ -1002,6 +1153,10 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(io_buffer_unregister_bvec);
 
+/*
+ This function validates the fixed range of a buffer. It takes the buffer address (buf_addr), length (len), and an io_mapped_ubuf structure (imu) as input. 
+ It checks if the buffer address is within the mapped region and if the length is valid. It returns 0 on success or an error code on failure.
+*/
 static int validate_fixed_range(u64 buf_addr, size_t len,
 				const struct io_mapped_ubuf *imu)
 {
@@ -1017,6 +1172,10 @@ static int validate_fixed_range(u64 buf_addr, size_t len,
 	return 0;
 }
 
+/*
+ This function imports a fixed buffer into an I/O vector iterator. It takes the direction (ddir), the iterator (iter), an io_mapped_ubuf structure (imu), 
+ the buffer address (buf_addr), and the length (len) as input. It validates the range and sets up the iterator for the buffer.
+*/
 static int io_import_fixed(int ddir, struct iov_iter *iter,
 			   struct io_mapped_ubuf *imu,
 			   u64 buf_addr, size_t len)
@@ -1085,6 +1244,10 @@ static int io_import_fixed(int ddir, struct iov_iter *iter,
 	return 0;
 }
 
+/*
+ This function assigns a buffer node to a request. It takes the request (req) and the node (node) as input. 
+ It sets the buffer node in the request and increments the reference count of the node.
+*/
 inline struct io_rsrc_node *io_find_buf_node(struct io_kiocb *req,
 					     unsigned issue_flags)
 {
@@ -1102,6 +1265,10 @@ inline struct io_rsrc_node *io_find_buf_node(struct io_kiocb *req,
 	return node;
 }
 
+/*
+ This function imports a registered buffer into an I/O vector iterator. It takes the request (req), the iterator (iter), the buffer address (buf_addr), 
+ the length (len), the direction (ddir), and issue flags as input. It finds the buffer node and imports it into the iterator.
+*/
 int io_import_reg_buf(struct io_kiocb *req, struct iov_iter *iter,
 			u64 buf_addr, size_t len, int ddir,
 			unsigned issue_flags)
@@ -1276,6 +1443,10 @@ int io_register_clone_buffers(struct io_ring_ctx *ctx, void __user *arg)
 	return ret;
 }
 
+/*
+ This function frees the I/O vector structure. It takes a pointer to the iou_vec structure (iv) as input. 
+ If the iovec is not NULL, it frees the memory allocated for it and sets the iovec pointer to NULL and the number of entries to 0.
+*/
 void io_vec_free(struct iou_vec *iv)
 {
 	if (!iv->iovec)
@@ -1285,6 +1456,10 @@ void io_vec_free(struct iou_vec *iv)
 	iv->nr = 0;
 }
 
+/*
+ This function, io_vec_realloc, reallocates memory for an I/O vector (iou_vec) to accommodate a specified number of entries (nr_entries). 
+ If successful, it returns 0, otherwise it returns -ENOMEM.
+*/
 int io_vec_realloc(struct iou_vec *iv, unsigned nr_entries)
 {
 	gfp_t gfp = GFP_KERNEL | __GFP_NOWARN;
@@ -1300,6 +1475,10 @@ int io_vec_realloc(struct iou_vec *iv, unsigned nr_entries)
 	return 0;
 }
 
+/*
+ This C function, io_vec_fill_bvec, fills a bio vector (struct bio_vec *res_bvec) from an I/O vector (struct iovec *iovec) and a mapped user buffer (struct io_mapped_ubuf *imu). It returns 0 on success or an error code on failure.
+ The function iterates over the I/O vector, validates each segment, and maps it to the corresponding bio vector segments. It also checks for overflow and invalid lengths.
+*/
 static int io_vec_fill_bvec(int ddir, struct iov_iter *iter,
 				struct io_mapped_ubuf *imu,
 				struct iovec *iovec, unsigned nr_iovs,
@@ -1350,6 +1529,11 @@ static int io_vec_fill_bvec(int ddir, struct iov_iter *iter,
 	return 0;
 }
 
+/*
+ This function estimates the size of a bio vector based on the I/O vector and the mapped user buffer. 
+ It takes the I/O vector (iov), the number of I/O vectors (nr_iovs), and the mapped user buffer (imu) as input. 
+ It returns the estimated size of the bio vector.
+*/
 static int io_estimate_bvec_size(struct iovec *iov, unsigned nr_iovs,
 				 struct io_mapped_ubuf *imu)
 {
@@ -1362,6 +1546,12 @@ static int io_estimate_bvec_size(struct iovec *iov, unsigned nr_iovs,
 	return max_segs;
 }
 
+/*
+ This function fills a kernel bio vector from an I/O vector and a mapped user buffer. 
+ It takes the direction (ddir), the iterator (iter), the mapped user buffer (imu), the I/O vector (iovec), 
+ the number of I/O vectors (nr_iovs), and the I/O vector structure (vec) as input. 
+ It returns 0 on success or an error code on failure.
+*/
 static int io_vec_fill_kern_bvec(int ddir, struct iov_iter *iter,
 				 struct io_mapped_ubuf *imu,
 				 struct iovec *iovec, unsigned nr_iovs,
@@ -1390,6 +1580,11 @@ static int io_vec_fill_kern_bvec(int ddir, struct iov_iter *iter,
 	return 0;
 }
 
+/*
+ This function calculates the size of a kernel bio vector based on the I/O vector and the mapped user buffer. 
+ It takes the I/O vector (iov), the mapped user buffer (imu), and a pointer to store the number of segments (nr_seg) as input. 
+ It returns 0 on success or an error code on failure.
+*/
 static int iov_kern_bvec_size(const struct iovec *iov,
 			      const struct io_mapped_ubuf *imu,
 			      unsigned int *nr_seg)
@@ -1413,6 +1608,11 @@ static int iov_kern_bvec_size(const struct iovec *iov,
 	return 0;
 }
 
+/*
+ This function calculates the size of a kernel bio vector based on the I/O vector and the mapped user buffer. 
+ It takes the I/O vector (iov), the number of I/O vectors (nr_iovs), the mapped user buffer (imu), 
+ and a pointer to store the number of segments (nr_segs) as input. It returns 0 on success or an error code on failure.
+*/
 static int io_kern_bvec_size(struct iovec *iov, unsigned nr_iovs,
 			     struct io_mapped_ubuf *imu, unsigned *nr_segs)
 {
@@ -1438,6 +1638,11 @@ static int io_kern_bvec_size(struct iovec *iov, unsigned nr_iovs,
 	return 0;
 }
 
+/*
+ This function imports a registered buffer into an I/O vector iterator. It takes the direction (ddir), the iterator (iter), 
+ the request (req), the I/O vector structure (vec), the number of I/O vectors (nr_iovs), and issue flags as input. 
+ It finds the buffer node and fills the iterator with the buffer.
+*/
 int io_import_reg_vec(int ddir, struct iov_iter *iter,
 			struct io_kiocb *req, struct iou_vec *vec,
 			unsigned nr_iovs, unsigned issue_flags)
@@ -1498,6 +1703,11 @@ int io_import_reg_vec(int ddir, struct iov_iter *iter,
 	return io_vec_fill_bvec(ddir, iter, imu, iov, nr_iovs, vec);
 }
 
+/*
+ This function prepares a registered I/O vector for use with a request. It takes the request (req), the I/O vector structure (iv), 
+ the user I/O vector (uvec), and the number of segments (uvec_segs) as input. It reallocates memory for the I/O vector if necessary 
+ and fills it with the user I/O vector.
+*/
 int io_prep_reg_iovec(struct io_kiocb *req, struct iou_vec *iv,
 		      const struct iovec __user *uvec, size_t uvec_segs)
 {

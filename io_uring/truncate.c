@@ -20,6 +20,12 @@ struct io_ftrunc {
 	loff_t				len;
 };
 
+/*
+ This is a bit of a hack, but we need to be able to pass the file
+ descriptor to the ftruncate() syscall.  The file descriptor
+ is passed in the sqe->fd field, and we need to save it in the
+ io_ftrunc structure.
+*/
 int io_ftruncate_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_ftrunc *ft = io_kiocb_to_cmd(req, struct io_ftrunc);
@@ -34,6 +40,12 @@ int io_ftruncate_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ This function, io_ftruncate, performs a file truncation operation using the ftruncate system call. 
+ It checks if the operation is being issued in a non-blocking context and triggers a warning if so. 
+ The function then calls do_ftruncate with the file descriptor and length from the io_ftrunc structure, and sets the result of the operation in the io_kiocb request structure. 
+ The function returns IOU_OK to indicate successful completion.
+*/
 int io_ftruncate(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_ftrunc *ft = io_kiocb_to_cmd(req, struct io_ftrunc);

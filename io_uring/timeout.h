@@ -11,6 +11,10 @@ struct io_timeout_data {
 struct io_kiocb *__io_disarm_linked_timeout(struct io_kiocb *req,
 					    struct io_kiocb *link);
 
+/*
+  Disarm the linked timeout if it is the last reference
+  and return the linked timeout request.
+*/
 static inline struct io_kiocb *io_disarm_linked_timeout(struct io_kiocb *req)
 {
 	struct io_kiocb *link = req->link;

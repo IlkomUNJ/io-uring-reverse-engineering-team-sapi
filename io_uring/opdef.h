@@ -45,7 +45,7 @@ struct io_cold_def {
 extern const struct io_issue_def io_issue_defs[];
 extern const struct io_cold_def io_cold_defs[];
 
-bool io_uring_op_supported(u8 opcode);
+bool io_uring_op_supported(u8 opcode); // check if opcode is supported
 
-void io_uring_optable_init(void);
+void io_uring_optable_init(void); // initialize the operation table
 #endif

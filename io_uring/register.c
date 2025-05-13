@@ -35,6 +35,11 @@
 #define IORING_MAX_RESTRICTIONS	(IORING_RESTRICTION_LAST + \
 				 IORING_REGISTER_LAST + IORING_OP_LAST)
 
+/*
+ This is a bit of a hack, but we need to be able to register
+ a personality for the io_uring instance. We use the task
+ credentials as the key, and the task struct as the value.
+*/
 static __cold int io_probe(struct io_ring_ctx *ctx, void __user *arg,
 			   unsigned nr_args)
 {
@@ -74,6 +79,10 @@ out:
 	return ret;
 }
 
+/*
+ This function unregisters a personality from an io_uring context. It takes a context (ctx) and an ID (id) as input, removes the corresponding credentials from the context's personality list, and releases the credentials if they exist. 
+ If the removal is successful, it returns 0; otherwise, it returns an invalid argument error (-EINVAL).
+*/
 int io_unregister_personality(struct io_ring_ctx *ctx, unsigned id)
 {
 	const struct cred *creds;
@@ -87,7 +96,10 @@ int io_unregister_personality(struct io_ring_ctx *ctx, unsigned id)
 	return -EINVAL;
 }
 
-
+/*
+ This function registers a personality for an io_uring context. It retrieves the current task's credentials, allocates a cyclic ID for the personality, and stores the credentials in the context's personality list. 
+ If successful, it returns the ID; otherwise, it returns an error code.
+*/
 static int io_register_personality(struct io_ring_ctx *ctx)
 {
 	const struct cred *creds;
@@ -105,6 +117,10 @@ static int io_register_personality(struct io_ring_ctx *ctx)
 	return id;
 }
 
+/*
+ This function io_parse_restrictions parses an array of io_uring_restriction structures from user space and applies the specified restrictions to an io_restriction structure.
+ It checks the validity of the input, copies the data from user space, and then iterates over the restrictions, setting the corresponding bits or values in the io_restriction structure.
+*/
 static __cold int io_parse_restrictions(void __user *arg, unsigned int nr_args,
 					struct io_restriction *restrictions)
 {
@@ -155,6 +171,14 @@ err:
 	return ret;
 }
 
+/*
+ This function io_register_restrictions registers restrictions for an I/O ring context (ctx).
+ It first checks two conditions:
+	1. If the ring was not started in a disabled state (IORING_SETUP_R_DISABLED flag), it returns an error (-EBADFD).
+	2. If restrictions have already been registered (ctx->restrictions.registered), it returns an error (-EBUSY).
+ If both conditions are met, it parses the restrictions from user space and applies them to the context.
+ If parsing is successful, it sets the ctx->restrictions.registered flag to true; otherwise, it resets all restrictions and returns the error code.
+*/
 static __cold int io_register_restrictions(struct io_ring_ctx *ctx,
 					   void __user *arg, unsigned int nr_args)
 {
@@ -177,6 +201,10 @@ static __cold int io_register_restrictions(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/*
+This function io_register_enable_rings enables an I/O ring context (ctx) that was previously disabled. 
+It checks for specific conditions, sets the submitter task if necessary, and wakes up waiters if there are any. If successful, it clears the disabled flag and returns 0.
+*/
 static int io_register_enable_rings(struct io_ring_ctx *ctx)
 {
 	if (!(ctx->flags & IORING_SETUP_R_DISABLED))
@@ -201,6 +229,11 @@ static int io_register_enable_rings(struct io_ring_ctx *ctx)
 	return 0;
 }
 
+/*
+ This function io_register_iowq_aff registers a new CPU affinity mask for an I/O ring context (ctx). 
+ It checks if the context is in SQPOLL mode and either sets the CPU affinity for the current task or for the SQPOLL thread. 
+ If successful, it returns 0; otherwise, it returns an error code.
+*/
 static __cold int __io_register_iowq_aff(struct io_ring_ctx *ctx,
 					 cpumask_var_t new_mask)
 {
@@ -217,6 +250,10 @@ static __cold int __io_register_iowq_aff(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/*
+ This function, io_register_iowq_aff, registers a new CPU affinity mask for an I/O ring context (ctx). 
+ It takes a user-space pointer (arg) and length (len) as input, copies the affinity mask from user space to kernel space, and then calls __io_register_iowq_aff to apply the new mask. If the copy or registration fails, it returns an error code.
+*/
 static __cold int io_register_iowq_aff(struct io_ring_ctx *ctx,
 				       void __user *arg, unsigned len)
 {
@@ -249,11 +286,20 @@ static __cold int io_register_iowq_aff(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/*
+ This function io_unregister_iowq_aff unregisters the CPU affinity mask for an I/O ring context (ctx). 
+ It calls __io_register_iowq_aff with a NULL mask to clear the current affinity. If successful, it returns 0; otherwise, it returns an error code.
+*/
 static __cold int io_unregister_iowq_aff(struct io_ring_ctx *ctx)
 {
 	return __io_register_iowq_aff(ctx, NULL);
 }
 
+/*
+ This function io_register_iowq_max_workers sets the maximum number of workers for an I/O ring context (ctx). 
+ It takes a user-space pointer (arg) as input, copies the new worker count from user space, and updates the context's worker limits. 
+ If successful, it returns 0; otherwise, it returns an error code.
+*/
 static __cold int io_register_iowq_max_workers(struct io_ring_ctx *ctx,
 					       void __user *arg)
 	__must_hold(&ctx->uring_lock)
@@ -340,6 +386,12 @@ err:
 	return ret;
 }
 
+
+/*
+ This function io_register_clock registers a clock for an I/O ring context (ctx). 
+ It takes a user-space pointer (arg) as input, copies the clock ID from user space, and sets the ctx->clockid and ctx->clock_offset accordingly. 
+ If successful, it returns 0; otherwise, it returns an error code.
+*/
 static int io_register_clock(struct io_ring_ctx *ctx,
 			     struct io_uring_clock_register __user *arg)
 {
@@ -377,6 +429,11 @@ struct io_ring_ctx_rings {
 	struct io_mapped_region ring_region;
 };
 
+/*
+  Free the ring and sqe regions. This is called when we fail to register
+  the new rings, or when we are done with the old ones.
+ */
+*/
 static void io_register_free_rings(struct io_ring_ctx *ctx,
 				   struct io_uring_params *p,
 				   struct io_ring_ctx_rings *r)
@@ -395,6 +452,12 @@ static void io_register_free_rings(struct io_ring_ctx *ctx,
 #define COPY_FLAGS	(IORING_SETUP_NO_SQARRAY | IORING_SETUP_SQE128 | \
 			 IORING_SETUP_CQE32 | IORING_SETUP_NO_MMAP)
 
+
+/*
+ Resize the rings. This is a bit tricky, as we need to swap the
+ old and new rings, and then free the old ones. We also need to
+ make sure that we don't have any pending IO on the old rings.
+*/
 static int io_register_resize_rings(struct io_ring_ctx *ctx, void __user *arg)
 {
 	struct io_uring_region_desc rd;
@@ -581,6 +644,11 @@ out:
 	return ret;
 }
 
+/*
+ This function io_register_mem_region registers a memory region for an I/O ring context (ctx). 
+ It takes a user-space pointer (uarg) as input, copies the memory region descriptor from user space, and checks for validity. 
+ If successful, it creates a new memory region and updates the context's parameters accordingly. If there are waiters, it sets the wait argument and size.
+*/
 static int io_register_mem_region(struct io_ring_ctx *ctx, void __user *uarg)
 {
 	struct io_uring_mem_region_reg __user *reg_uptr = uarg;
@@ -626,6 +694,11 @@ static int io_register_mem_region(struct io_ring_ctx *ctx, void __user *uarg)
 	return 0;
 }
 
+/*
+ This function io_register_pbuf_ring registers a pbuf ring for an I/O ring context (ctx). 
+ It takes a user-space pointer (arg) as input, copies the pbuf ring descriptor from user space, and checks for validity. 
+ If successful, it creates a new pbuf ring and updates the context's parameters accordingly.
+*/
 static int __io_uring_register(struct io_ring_ctx *ctx, unsigned opcode,
 			       void __user *arg, unsigned nr_args)
 	__releases(ctx->uring_lock)

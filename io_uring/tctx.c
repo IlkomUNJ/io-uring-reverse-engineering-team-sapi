@@ -12,6 +12,9 @@
 #include "io_uring.h"
 #include "tctx.h"
 
+/*
+ io_init_wq_offload() is called with ctx->uring_lock held
+*/
 static struct io_wq *io_init_wq_offload(struct io_ring_ctx *ctx,
 					struct task_struct *task)
 {
@@ -44,6 +47,11 @@ static struct io_wq *io_init_wq_offload(struct io_ring_ctx *ctx,
 	return io_wq_create(concurrency, &data);
 }
 
+/*
+ This function, __io_uring_free, appears to be responsible for freeing resources associated with an io_uring task context (tctx) when a task (tsk) is being cleaned up.
+ It checks for potential errors or inconsistencies in the tctx state, such as unexpected entries in an xarray (xa) or non-NULL pointers to a workqueue (io_wq) or cached references (cached_refs), and logs warnings if any are found.
+ Finally, it destroys a percpu counter (inflight), frees the tctx memory, and sets the io_uring pointer in the task structure to NULL.
+*/
 void __io_uring_free(struct task_struct *tsk)
 {
 	struct io_uring_task *tctx = tsk->io_uring;
@@ -68,6 +76,11 @@ void __io_uring_free(struct task_struct *tsk)
 	tsk->io_uring = NULL;
 }
 
+/*
+ This function, io_uring_alloc_task_context, allocates memory for a task context (tctx) associated with an io_uring context (ctx) for a given task (tsk). 
+ It initializes various fields in the tctx structure, including a percpu counter for tracking inflight requests and a workqueue for offloading I/O operations. 
+ If any allocation or initialization fails, it cleans up and returns an error code.
+*/
 __cold int io_uring_alloc_task_context(struct task_struct *task,
 				       struct io_ring_ctx *ctx)
 {
@@ -103,6 +116,10 @@ __cold int io_uring_alloc_task_context(struct task_struct *task,
 	return 0;
 }
 
+/*
+ This function adds a task context node to an io_uring context. If the task context doesn't exist, it allocates one and sets up its io worker queue limits. Then, it checks if a node for the given io_uring context already exists in the task's xarray. 
+ If not, it creates a new node, stores it in the xarray, and adds it to the io_uring context's task list.
+*/
 int __io_uring_add_tctx_node(struct io_ring_ctx *ctx)
 {
 	struct io_uring_task *tctx = current->io_uring;
@@ -145,6 +162,11 @@ int __io_uring_add_tctx_node(struct io_ring_ctx *ctx)
 	return 0;
 }
 
+/*
+ This function adds a task context node to an io_uring context from the submit path. 
+ It checks if the current task is the submitter and if not, returns an error. 
+ If the task context node is successfully added, it updates the last field of the io_uring task structure.
+*/
 int __io_uring_add_tctx_node_from_submit(struct io_ring_ctx *ctx)
 {
 	int ret;
@@ -187,6 +209,11 @@ __cold void io_uring_del_tctx_node(unsigned long index)
 	kfree(node);
 }
 
+/*
+ This function cleans up the task context (tctx) associated with the current task. 
+ It iterates through the xarray of task context nodes, removing each one and freeing its memory. 
+ If the task context has an associated workqueue (io_wq), it releases it and sets the pointer to NULL.
+*/
 __cold void io_uring_clean_tctx(struct io_uring_task *tctx)
 {
 	struct io_wq *wq = tctx->io_wq;
@@ -207,6 +234,10 @@ __cold void io_uring_clean_tctx(struct io_uring_task *tctx)
 	}
 }
 
+/*
+ This function unregisters the ring file descriptors associated with the current task's io_uring context. 
+ It iterates through the registered ring file descriptors and releases each one, setting the corresponding pointer to NULL.
+*/
 void io_uring_unreg_ringfd(void)
 {
 	struct io_uring_task *tctx = current->io_uring;
@@ -220,6 +251,10 @@ void io_uring_unreg_ringfd(void)
 	}
 }
 
+/*
+ This function adds a registered file to the task context's (tctx) array of registered ring file descriptors (registered_rings). 
+ It searches for an available slot in the array between start and end indices, and if found, assigns the file to that slot and returns the index. If all slots are occupied, it returns -EBUSY.
+*/
 int io_ring_add_registered_file(struct io_uring_task *tctx, struct file *file,
 				     int start, int end)
 {
@@ -235,6 +270,11 @@ int io_ring_add_registered_file(struct io_uring_task *tctx, struct file *file,
 	return -EBUSY;
 }
 
+/*
+ This function adds a registered file descriptor (fd) to the task context's (tctx) array of registered ring file descriptors (registered_rings). 
+ It first retrieves the file structure associated with the fd, checks if it is valid and supports io_uring operations, and then calls io_ring_add_registered_file to add it to the array. 
+ If successful, it returns the index of the added file; otherwise, it returns an error code.
+*/
 static int io_ring_add_registered_fd(struct io_uring_task *tctx, int fd,
 				     int start, int end)
 {
@@ -321,6 +361,12 @@ int io_ringfd_register(struct io_ring_ctx *ctx, void __user *__arg,
 	return i ? i : ret;
 }
 
+/*
+ Unregister a ring fd. User passes in an array of struct io_uring_rsrc_update
+ with ->data set to the ring_fd, and ->offset given for the desired index.
+ Returns number of entries successfully processed, or < 0 on error if none
+ were processed.
+ */
 int io_ringfd_unregister(struct io_ring_ctx *ctx, void __user *__arg,
 			 unsigned nr_args)
 {
