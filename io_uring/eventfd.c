@@ -25,6 +25,13 @@ enum {
 	IO_EVENTFD_OP_SIGNAL_BIT,
 };
 
+/*
+This function is responsible for freeing an io_ev_fd structure when it is no longer in use. 
+It takes a pointer to an rcu_head structure (rcu) as input, which is part of the io_ev_fd structure. 
+Using the container_of macro, the function retrieves the enclosing io_ev_fd structure from the rcu pointer. 
+It then releases the associated eventfd context using eventfd_ctx_put and frees the memory allocated for the io_ev_fd structure using kfree. 
+This function is called asynchronously via the Read-Copy-Update (RCU) mechanism to ensure safe cleanup in a concurrent environment.
+*/
 static void io_eventfd_free(struct rcu_head *rcu)
 {
 	struct io_ev_fd *ev_fd = container_of(rcu, struct io_ev_fd, rcu);
@@ -33,12 +40,22 @@ static void io_eventfd_free(struct rcu_head *rcu)
 	kfree(ev_fd);
 }
 
+/*
+This function decrements the reference count of an io_ev_fd structure and triggers its cleanup if the reference count reaches zero. 
+It uses refcount_dec_and_test to atomically decrement the reference count and check if it has reached zero. 
+If so, it schedules the io_eventfd_free function to be called via call_rcu, ensuring that the cleanup is deferred until it is safe to do so in an RCU-protected context.
+*/
 static void io_eventfd_put(struct io_ev_fd *ev_fd)
 {
 	if (refcount_dec_and_test(&ev_fd->refs))
 		call_rcu(&ev_fd->rcu, io_eventfd_free);
 }
 
+/*
+This function signals an event on the eventfd associated with an io_ev_fd structure and then decrements its reference count. 
+It retrieves the io_ev_fd structure from the rcu pointer using container_of. The eventfd_signal_mask function is called to signal the event, using the EPOLL_URING_WAKE mask to indicate the type of event. 
+After signaling, the function calls io_eventfd_put to decrement the reference count and potentially trigger cleanup.
+*/
 static void io_eventfd_do_signal(struct rcu_head *rcu)
 {
 	struct io_ev_fd *ev_fd = container_of(rcu, struct io_ev_fd, rcu);
@@ -47,6 +64,11 @@ static void io_eventfd_do_signal(struct rcu_head *rcu)
 	io_eventfd_put(ev_fd);
 }
 
+/*
+This function releases an io_ev_fd structure, optionally decrementing its reference count. 
+If the put_ref parameter is true, it calls io_eventfd_put to decrement the reference count. 
+Regardless of the put_ref value, it calls rcu_read_unlock to release the RCU read lock, ensuring proper synchronization in an RCU-protected context.
+*/
 static void io_eventfd_release(struct io_ev_fd *ev_fd, bool put_ref)
 {
 	if (put_ref)
@@ -112,6 +134,11 @@ static struct io_ev_fd *io_eventfd_grab(struct io_ring_ctx *ctx)
 	return NULL;
 }
 
+/*
+The io_eventfd_signal function provides a robust mechanism for signaling events in the io_uring subsystem. 
+By safely grabbing the io_ev_fd structure, performing the signaling operation, and releasing the structure afterward, it ensures proper resource management and thread safety. 
+This design is critical for maintaining the integrity and efficiency of asynchronous I/O operations in io_uring.
+*/
 void io_eventfd_signal(struct io_ring_ctx *ctx)
 {
 	struct io_ev_fd *ev_fd;
@@ -121,6 +148,11 @@ void io_eventfd_signal(struct io_ring_ctx *ctx)
 		io_eventfd_release(ev_fd, __io_eventfd_signal(ev_fd));
 }
 
+/*
+The io_eventfd_flush_signal function provides a robust mechanism for signaling events in the io_uring subsystem. 
+By carefully determining when signaling is necessary, ensuring thread safety, and managing resources efficiently, it helps maintain the integrity and performance of asynchronous I/O operations involving eventfd. 
+This design is particularly important for applications that rely on accurate and efficient event notifications.
+*/
 void io_eventfd_flush_signal(struct io_ring_ctx *ctx)
 {
 	struct io_ev_fd *ev_fd;
@@ -150,6 +182,11 @@ void io_eventfd_flush_signal(struct io_ring_ctx *ctx)
 	}
 }
 
+/*
+The io_eventfd_register function provides a robust mechanism for registering an eventfd with an io_uring context. 
+By validating input, managing memory allocation, and ensuring thread safety through locks and RCU mechanisms, it maintains the integrity and efficiency of the io_uring subsystem. 
+This design is critical for enabling reliable event notifications in asynchronous I/O operations.
+*/
 int io_eventfd_register(struct io_ring_ctx *ctx, void __user *arg,
 			unsigned int eventfd_async)
 {
@@ -189,6 +226,11 @@ int io_eventfd_register(struct io_ring_ctx *ctx, void __user *arg,
 	return 0;
 }
 
+/*
+The io_eventfd_unregister function provides a robust mechanism for unregistering an eventfd from an io_uring context. 
+By safely removing the eventfd reference, updating the context state, and releasing resources through reference counting and RCU mechanisms, the function ensures proper resource management and thread safety. 
+This design is critical for maintaining the integrity and efficiency of the io_uring subsystem, especially in environments with concurrent operations.
+*/
 int io_eventfd_unregister(struct io_ring_ctx *ctx)
 {
 	struct io_ev_fd *ev_fd;

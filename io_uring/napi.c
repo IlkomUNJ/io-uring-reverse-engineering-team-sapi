@@ -18,6 +18,10 @@ struct io_napi_entry {
 	struct rcu_head		rcu;
 };
 
+/*
+ * Hash table for NAPI IDs. The hash table is used to quickly find
+ * the io_napi_entry for a given NAPI ID.
+ */
 static struct io_napi_entry *io_napi_hash_find(struct hlist_head *hash_list,
 					       unsigned int napi_id)
 {
@@ -38,6 +42,14 @@ static inline ktime_t net_to_ktime(unsigned long t)
 	return ns_to_ktime(t << 10);
 }
 
+/*
+ * __io_napi_add_id - add a NAPI ID to the hash table and list
+ * @ctx: io_uring context
+ * @napi_id: NAPI ID to add
+ *
+ * This function adds a NAPI ID to the hash table and list.
+ * It returns 0 on success, or an error code on failure.
+ */
 int __io_napi_add_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 {
 	struct hlist_head *hash_list;
@@ -81,6 +93,15 @@ int __io_napi_add_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 	return 0;
 }
 
+/*
+ * __io_napi_del_id - remove a NAPI ID from the hash table and list
+ * @ctx: io_uring context
+ * @napi_id: NAPI ID to remove
+ *
+ * This function removes a NAPI ID from the hash table and list.
+ * It returns 0 on success, or an error code on failure.
+ */
+
 static int __io_napi_del_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 {
 	struct hlist_head *hash_list;
@@ -102,6 +123,13 @@ static int __io_napi_del_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 	return 0;
 }
 
+/*
+ * __io_napi_remove_stale - remove stale NAPI entries
+ * @ctx: io_uring context
+ *
+ * This function removes stale NAPI entries from the hash table and list.
+ * It is called periodically to clean up old entries.
+ */
 static void __io_napi_remove_stale(struct io_ring_ctx *ctx)
 {
 	struct io_napi_entry *e;
@@ -122,12 +150,29 @@ static void __io_napi_remove_stale(struct io_ring_ctx *ctx)
 	}
 }
 
+/*
+ * io_napi_remove_stale - remove stale NAPI entries
+ * @ctx: io_uring context
+ * @is_stale: true if the entry is stale
+ *
+ * This function removes stale NAPI entries from the hash table and list.
+ * It is called periodically to clean up old entries.
+ */
+*/
 static inline void io_napi_remove_stale(struct io_ring_ctx *ctx, bool is_stale)
 {
 	if (is_stale)
 		__io_napi_remove_stale(ctx);
 }
 
+/*
+ * io_napi_busy_loop_timeout - check if busy loop timeout has expired
+ * @start_time: start time of the busy loop
+ * @bp: busy poll timeout
+ *
+ * This function checks if the busy loop timeout has expired.
+ * It returns true if the timeout has expired, false otherwise.
+*/
 static inline bool io_napi_busy_loop_timeout(ktime_t start_time,
 					     ktime_t bp)
 {
@@ -141,6 +186,14 @@ static inline bool io_napi_busy_loop_timeout(ktime_t start_time,
 	return true;
 }
 
+/*
+ * io_napi_busy_loop_should_end - check if busy loop should end
+ * @data: data passed to the busy loop
+ * @start_time: start time of the busy loop
+ *
+ * This function checks if the busy loop should end.
+ * It returns true if the loop should end, false otherwise.
+*/
 static bool io_napi_busy_loop_should_end(void *data,
 					 unsigned long start_time)
 {
@@ -160,6 +213,9 @@ static bool io_napi_busy_loop_should_end(void *data,
 /*
  * never report stale entries
  */
+ /*
+ * static_tracking_do_busy_loop - perform busy loop for static tracking 
+*/
 static bool static_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 					 bool (*loop_end)(void *, unsigned long),
 					 void *loop_end_arg)
@@ -171,6 +227,16 @@ static bool static_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 				   ctx->napi_prefer_busy_poll, BUSY_POLL_BUDGET);
 	return false;
 }
+
+/*
+ * dynamic_tracking_do_busy_loop - perform busy loop for dynamic tracking
+ * @ctx: io_uring context
+ * @loop_end: function to check if the loop should end
+ * @loop_end_arg: argument to pass to the loop end function
+ *
+ * This function performs a busy loop for dynamic tracking.
+ * It returns true if there are stale entries, false otherwise.
+ */
 
 static bool
 dynamic_tracking_do_busy_loop(struct io_ring_ctx *ctx,
@@ -191,6 +257,16 @@ dynamic_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 	return is_stale;
 }
 
+/*
+ * __io_napi_do_busy_loop - perform busy loop for NAPI tracking
+ * @ctx: io_uring context
+ * @loop_end: function to check if the loop should end
+ * @loop_end_arg: argument to pass to the loop end function
+ *
+ * This function performs a busy loop for NAPI tracking.
+ * It returns true if there are stale entries, false otherwise.
+ */
+
 static inline bool
 __io_napi_do_busy_loop(struct io_ring_ctx *ctx,
 		       bool (*loop_end)(void *, unsigned long),
@@ -200,6 +276,15 @@ __io_napi_do_busy_loop(struct io_ring_ctx *ctx,
 		return static_tracking_do_busy_loop(ctx, loop_end, loop_end_arg);
 	return dynamic_tracking_do_busy_loop(ctx, loop_end, loop_end_arg);
 }
+
+/*
+ * io_napi_blocking_busy_loop - perform busy loop for blocking NAPI
+ * @ctx: io_uring context
+ * @iowq: io wait queue
+ *
+ * This function performs a busy loop for blocking NAPI.
+ * It returns true if there are stale entries, false otherwise.
+ */
 
 static void io_napi_blocking_busy_loop(struct io_ring_ctx *ctx,
 				       struct io_wait_queue *iowq)
@@ -234,6 +319,9 @@ static void io_napi_blocking_busy_loop(struct io_ring_ctx *ctx,
  *
  * Init napi settings in the io-uring context.
  */
+ /*
+ * This function initializes the NAPI settings in the io-uring context.
+ */
 void io_napi_init(struct io_ring_ctx *ctx)
 {
 	u64 sys_dt = READ_ONCE(sysctl_net_busy_poll) * NSEC_PER_USEC;
@@ -251,6 +339,9 @@ void io_napi_init(struct io_ring_ctx *ctx)
  *
  * Free the napi list and the hash table in the io-uring context.
  */
+ /*
+ * This function deallocates the NAPI list and the hash table in the
+ */
 void io_napi_free(struct io_ring_ctx *ctx)
 {
 	struct io_napi_entry *e;
@@ -263,6 +354,17 @@ void io_napi_free(struct io_ring_ctx *ctx)
 	INIT_LIST_HEAD_RCU(&ctx->napi_list);
 }
 
+/*
+ * io_napi_register_napi() - Register napi with io-uring
+ * @ctx: pointer to io-uring context structure
+ * @napi: pointer to io_uring_napi structure
+ *
+ * Register napi in the io-uring context.
+ */
+ /*
+ * This function registers NAPI in the io-uring context.
+ */
+*/
 static int io_napi_register_napi(struct io_ring_ctx *ctx,
 				 struct io_uring_napi *napi)
 {
@@ -287,6 +389,9 @@ static int io_napi_register_napi(struct io_ring_ctx *ctx,
  * @arg: pointer to io_uring_napi structure
  *
  * Register napi in the io-uring context.
+ */
+ /*
+ * This function registers NAPI in the io-uring context.
  */
 int io_register_napi(struct io_ring_ctx *ctx, void __user *arg)
 {
@@ -331,6 +436,9 @@ int io_register_napi(struct io_ring_ctx *ctx, void __user *arg)
  * Unregister napi. If arg has been specified copy the busy poll timeout and
  * prefer busy poll setting to the passed in structure.
  */
+ /*
+ * This function unregisters NAPI in the io-uring context.
+ */
 int io_unregister_napi(struct io_ring_ctx *ctx, void __user *arg)
 {
 	const struct io_uring_napi curr = {
@@ -354,6 +462,9 @@ int io_unregister_napi(struct io_ring_ctx *ctx, void __user *arg)
  *
  * Execute the busy poll loop and merge the spliced off list.
  */
+ /*
+ * This function executes the busy poll loop and merges the spliced off list.
+ */
 void __io_napi_busy_loop(struct io_ring_ctx *ctx, struct io_wait_queue *iowq)
 {
 	if (ctx->flags & IORING_SETUP_SQPOLL)
@@ -375,6 +486,9 @@ void __io_napi_busy_loop(struct io_ring_ctx *ctx, struct io_wait_queue *iowq)
  * @ctx: pointer to io-uring context structure
  *
  * Splice of the napi list and execute the napi busy poll loop.
+ */
+ /*
+ * This function performs a busy poll loop for sqpoll.
  */
 int io_napi_sqpoll_busy_poll(struct io_ring_ctx *ctx)
 {

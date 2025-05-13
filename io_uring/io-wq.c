@@ -180,12 +180,20 @@ static inline struct io_wq_acct *io_wq_get_acct(struct io_worker *worker)
 	return worker->acct;
 }
 
+/*
+io_worker_ref_put: This function decrements the reference count (worker_refs) for the io_wq structure. If the reference count reaches zero, it signals the completion of the worker_done event using complete().
+Purpose: Ensures proper cleanup of the workqueue when all workers have finished their tasks.
+*/
 static void io_worker_ref_put(struct io_wq *wq)
 {
 	if (atomic_dec_and_test(&wq->worker_refs))
 		complete(&wq->worker_done);
 }
 
+/*
+io_wq_worker_stopped: Checks if the current worker has been stopped. It retrieves the worker_private field of the current task and verifies if the IO_WQ_BIT_EXIT flag is set in the worker's state.
+Purpose: Determines whether a worker is in the process of exiting, ensuring that no further tasks are assigned to it.
+*/
 bool io_wq_worker_stopped(void)
 {
 	struct io_worker *worker = current->worker_private;
@@ -196,6 +204,15 @@ bool io_wq_worker_stopped(void)
 	return test_bit(IO_WQ_BIT_EXIT, &worker->wq->state);
 }
 
+/*
+io_worker_cancel_cb: Cancels a worker by performing the following steps:
+Decrements the number of running workers (nr_running) in the associated accounting structure (io_wq_acct).
+Updates the worker count (nr_workers) under a spinlock to ensure thread safety.
+Releases the worker reference and clears its creation state.
+Calls io_worker_release to finalize the worker's cleanup.
+Purpose: Handles the safe cancellation of a worker, ensuring proper accounting and cleanup.
+
+*/
 static void io_worker_cancel_cb(struct io_worker *worker)
 {
 	struct io_wq_acct *acct = io_wq_get_acct(worker);
@@ -210,6 +227,10 @@ static void io_worker_cancel_cb(struct io_worker *worker)
 	io_worker_release(worker);
 }
 
+/*
+io_task_worker_match: Matches a task's callback (callback_head) with a specific worker. It checks if the callback function is create_worker_cb and verifies that the callback belongs to the given worker.
+Purpose: Identifies tasks associated with a specific worker, enabling targeted cancellation or processing.
+*/
 static bool io_task_worker_match(struct callback_head *cb, void *data)
 {
 	struct io_worker *worker;
@@ -220,6 +241,16 @@ static bool io_task_worker_match(struct callback_head *cb, void *data)
 	return worker == data;
 }
 
+/*
+io_worker_exit: Handles the complete exit process for a worker:
+Cancels any pending task work associated with the worker using task_work_cancel_match.
+Waits for the worker's references to be released (ref_done).
+Removes the worker from the free list and all workers list under a spinlock.
+Decrements the running worker count and clears the worker_private field of the current task to prevent further interactions with the exiting worker.
+Frees the worker's memory using kfree_rcu and decrements the workqueue's reference count.
+Calls do_exit(0) to terminate the worker thread.
+Purpose: Ensures a clean and safe shutdown of a worker, releasing all associated resources.
+*/
 static void io_worker_exit(struct io_worker *worker)
 {
 	struct io_wq *wq = worker->wq;
@@ -255,6 +286,11 @@ static void io_worker_exit(struct io_worker *worker)
 	do_exit(0);
 }
 
+/*
+__io_acct_run_queue: Checks if there is work to process in the accounting structure (io_wq_acct). It verifies that the IO_ACCT_STALLED_BIT flag is not set and that the work list is not empty.
+
+Purpose: Determines if the workqueue is ready to process tasks.
+*/
 static inline bool __io_acct_run_queue(struct io_wq_acct *acct)
 {
 	return !test_bit(IO_ACCT_STALLED_BIT, &acct->flags) &&
@@ -264,6 +300,11 @@ static inline bool __io_acct_run_queue(struct io_wq_acct *acct)
 /*
  * If there's work to do, returns true with acct->lock acquired. If not,
  * returns false with no lock held.
+ */
+ /*
+ io_acct_run_queue: Acquires the lock for the accounting structure and checks if there is work to process using __io_acct_run_queue. If no work is found, it releases the lock.
+
+Purpose: Safely checks for pending work while ensuring proper synchronization.
  */
 static inline bool io_acct_run_queue(struct io_wq_acct *acct)
 	__acquires(&acct->lock)
@@ -279,6 +320,13 @@ static inline bool io_acct_run_queue(struct io_wq_acct *acct)
 /*
  * Check head of free list for an available worker. If one isn't available,
  * caller must create one.
+ */
+ /*
+ io_acct_activate_free_worker: Attempts to activate an idle worker from the free list:
+Iterates over the free list (free_list) to find an idle worker.
+If a worker is found and is not in the process of exiting, it wakes up the worker's task and releases the worker reference.
+If no suitable worker is found, the function returns false, indicating that a new worker may need to be created.
+Purpose: Efficiently reuses idle workers to handle new tasks, minimizing the overhead of creating new worker threads.
  */
 static bool io_acct_activate_free_worker(struct io_wq_acct *acct)
 	__must_hold(RCU)
@@ -311,6 +359,11 @@ static bool io_acct_activate_free_worker(struct io_wq_acct *acct)
  * We need a worker. If we find a free one, we're good. If not, and we're
  * below the max number of workers, create one.
  */
+ /*
+ io_wq_create_worker: This function creates a new worker for the io_wq if the number of workers (nr_workers) is below the maximum allowed (max_workers). It increments the worker count and running worker count (nr_running) and calls create_io_worker to initialize the worker.
+
+Purpose: Dynamically adds workers to handle tasks, ensuring the workqueue can scale based on workload demands.
+ */
 static bool io_wq_create_worker(struct io_wq *wq, struct io_wq_acct *acct)
 {
 	/*
@@ -332,6 +385,11 @@ static bool io_wq_create_worker(struct io_wq *wq, struct io_wq_acct *acct)
 	return create_io_worker(wq, acct);
 }
 
+/*
+io_wq_inc_running: Increments the count of running workers (nr_running) for the associated accounting structure (io_wq_acct).
+
+Purpose: Tracks the number of active workers processing tasks.
+*/
 static void io_wq_inc_running(struct io_worker *worker)
 {
 	struct io_wq_acct *acct = io_wq_get_acct(worker);
@@ -339,6 +397,11 @@ static void io_wq_inc_running(struct io_worker *worker)
 	atomic_inc(&acct->nr_running);
 }
 
+/*
+create_worker_cb: A callback function used to create a new worker. It checks if the number of workers is below the maximum limit and creates a new worker if needed. If not, it decrements the running worker count and releases the worker reference.
+
+Purpose: Handles worker creation in response to specific events or conditions.
+*/
 static void create_worker_cb(struct callback_head *cb)
 {
 	struct io_worker *worker;
@@ -367,6 +430,11 @@ static void create_worker_cb(struct callback_head *cb)
 	io_worker_release(worker);
 }
 
+/*
+io_queue_worker_create: Queues a task to create a new worker. It ensures that the worker is not in the process of exiting and that the create_state is properly managed to avoid duplicate creation tasks.
+
+Purpose: Safely schedules worker creation tasks while maintaining synchronization.
+*/
 static bool io_queue_worker_create(struct io_worker *worker,
 				   struct io_wq_acct *acct,
 				   task_work_func_t func)
@@ -412,6 +480,11 @@ fail:
 	return false;
 }
 
+/*
+io_wq_dec_running: Decrements the count of running workers. If no workers are running and there is pending work in the queue, it schedules the creation of a new worker.
+
+Purpose: Ensures that the workqueue remains responsive by creating new workers when needed.
+*/
 static void io_wq_dec_running(struct io_worker *worker)
 {
 	struct io_wq_acct *acct = io_wq_get_acct(worker);
@@ -435,6 +508,11 @@ static void io_wq_dec_running(struct io_worker *worker)
  * Worker will start processing some work. Move it to the busy list, if
  * it's currently on the freelist
  */
+ /*
+ __io_worker_busy: Moves a worker from the free list to the busy state when it starts processing work. It removes the worker from the free list and clears the IO_WORKER_F_FREE flag.
+
+Purpose: Tracks workers that are actively processing tasks.
+ */
 static void __io_worker_busy(struct io_wq_acct *acct, struct io_worker *worker)
 {
 	if (test_bit(IO_WORKER_F_FREE, &worker->flags)) {
@@ -448,6 +526,11 @@ static void __io_worker_busy(struct io_wq_acct *acct, struct io_worker *worker)
 /*
  * No work, worker going to sleep. Move to freelist.
  */
+ /*
+ __io_worker_idle: Moves a worker to the free list when it has no work to process. It sets the IO_WORKER_F_FREE flag and adds the worker to the free list.
+
+Purpose: Manages idle workers, making them available for future tasks.
+ */
 static void __io_worker_idle(struct io_wq_acct *acct, struct io_worker *worker)
 	__must_hold(acct->workers_lock)
 {
@@ -457,6 +540,11 @@ static void __io_worker_idle(struct io_wq_acct *acct, struct io_worker *worker)
 	}
 }
 
+/*
+__io_get_work_hash and io_get_work_hash: Extract the hash value from the work's flags. This hash is used to group and manage work items with similar characteristics.
+
+Purpose: Enables efficient scheduling and conflict resolution for hashed work items.
+*/
 static inline unsigned int __io_get_work_hash(unsigned int work_flags)
 {
 	return work_flags >> IO_WQ_HASH_SHIFT;
@@ -467,6 +555,11 @@ static inline unsigned int io_get_work_hash(struct io_wq_work *work)
 	return __io_get_work_hash(atomic_read(&work->flags));
 }
 
+/*
+io_wait_on_hash: Waits for a specific hash to become available. If the hash is not currently being processed, it sets the task state to running and removes the wait entry.
+
+Purpose: Ensures that hashed work items are processed in a synchronized manner.
+*/
 static bool io_wait_on_hash(struct io_wq *wq, unsigned int hash)
 {
 	bool ret = false;
@@ -484,6 +577,11 @@ static bool io_wait_on_hash(struct io_wq *wq, unsigned int hash)
 	return ret;
 }
 
+/*
+io_get_next_work: Retrieves the next work item from the work list. It prioritizes non-hashed work, but if hashed work is encountered, it ensures that only one worker processes a specific hash at a time. If all work is stalled due to hashing conflicts, it waits for the hash to become available.
+
+Purpose: Implements fair and efficient scheduling of work items, resolving conflicts for hashed tasks.
+*/
 static struct io_wq_work *io_get_next_work(struct io_wq_acct *acct,
 					   struct io_wq *wq)
 	__must_hold(acct->lock)
@@ -542,6 +640,10 @@ static struct io_wq_work *io_get_next_work(struct io_wq_acct *acct,
 	return NULL;
 }
 
+/*
+io_assign_current_work: This function assigns a work item to a worker. If a work item is provided, it first processes any pending task work (io_run_task_work) and allows the scheduler to reschedule if necessary (cond_resched). The function then updates the worker's cur_work field under a spinlock to ensure thread safety.
+Purpose: Safely assigns a work item to a worker while maintaining synchronization.
+*/
 static void io_assign_current_work(struct io_worker *worker,
 				   struct io_wq_work *work)
 {
@@ -557,6 +659,11 @@ static void io_assign_current_work(struct io_worker *worker,
 
 /*
  * Called with acct->lock held, drops it before returning
+ */
+ /*
+ io_worker_handle_work: This function processes work items for a worker. It retrieves the next work item using io_get_next_work and marks the worker as busy (__io_worker_busy). The function handles dependent or linked work items, ensuring that all related tasks are processed together. If the work item is hashed, it manages hash-based synchronization to avoid conflicts.
+
+Purpose: Efficiently processes work items, including handling dependencies and resolving hashing conflicts.
  */
 static void io_worker_handle_work(struct io_wq_acct *acct,
 				  struct io_worker *worker)
@@ -642,6 +749,12 @@ static void io_worker_handle_work(struct io_wq_acct *acct,
 	} while (1);
 }
 
+/*
+io_wq_worker: This is the main function executed by worker threads. It continuously checks for work to process and handles it using io_worker_handle_work. If no work is available, the worker transitions to an idle state (__io_worker_idle) and waits for new tasks or a timeout.
+Timeout Handling: If the worker times out while idle, it checks whether it should exit (e.g., if it is not the last worker or its CPU affinity has changed).
+Signal Handling: The function handles signals sent to the worker, ensuring that it can exit cleanly if required.
+Purpose: Implements the main loop for worker threads, managing their lifecycle and ensuring responsiveness to new tasks.
+*/
 static int io_wq_worker(void *data)
 {
 	struct io_worker *worker = data;
@@ -709,6 +822,11 @@ static int io_wq_worker(void *data)
 /*
  * Called when a worker is scheduled in. Mark us as currently running.
  */
+ /*
+ io_wq_worker_running: Called when a worker is scheduled in. It marks the worker as running by setting the IO_WORKER_F_RUNNING flag and increments the count of running workers (io_wq_inc_running).
+
+Purpose: Tracks workers that are actively running and processing tasks.
+ */
 void io_wq_worker_running(struct task_struct *tsk)
 {
 	struct io_worker *worker = tsk->worker_private;
@@ -727,6 +845,11 @@ void io_wq_worker_running(struct task_struct *tsk)
  * Called when worker is going to sleep. If there are no workers currently
  * running and we have work pending, wake up a free one or create a new one.
  */
+ /*
+ io_wq_worker_sleeping: Called when a worker is about to sleep. It clears the IO_WORKER_F_RUNNING flag and decrements the count of running workers (io_wq_dec_running). If no workers are running and there is pending work, it wakes up an idle worker or creates a new one.
+
+Purpose: Manages transitions between active and idle states for workers, ensuring that the workqueue remains responsive.
+ */
 void io_wq_worker_sleeping(struct task_struct *tsk)
 {
 	struct io_worker *worker = tsk->worker_private;
@@ -742,6 +865,10 @@ void io_wq_worker_sleeping(struct task_struct *tsk)
 	io_wq_dec_running(worker);
 }
 
+/*
+io_init_new_worker: This function initializes a newly created worker. It associates the worker with its task (task_struct), sets its CPU affinity using the cpu_mask, and adds the worker to the free list and the list of all workers under a spinlock. The worker is marked as free (IO_WORKER_F_FREE), and the task is woken up.
+Purpose: Prepares a new worker for use by the workqueue, ensuring proper synchronization and resource tracking.
+*/
 static void io_init_new_worker(struct io_wq *wq, struct io_wq_acct *acct, struct io_worker *worker,
 			       struct task_struct *tsk)
 {
@@ -757,11 +884,20 @@ static void io_init_new_worker(struct io_wq *wq, struct io_wq_acct *acct, struct
 	wake_up_new_task(tsk);
 }
 
+/*
+io_wq_work_match_all: A simple utility function that always returns true. It is used as a match function for canceling all pending work.
+Purpose: Provides a generic match function for operations that apply to all work items.
+*/
 static bool io_wq_work_match_all(struct io_wq_work *work, void *data)
 {
 	return true;
 }
 
+/*
+io_should_retry_thread: Determines whether a failed thread creation attempt should be retried. It checks for fatal signals, limits the number of retries (WORKER_INIT_LIMIT), and allows retries for specific error codes (e.g., -EAGAIN, -ERESTARTSYS).
+
+Purpose: Prevents infinite retries and ensures retries are only attempted for recoverable errors.
+*/
 static inline bool io_should_retry_thread(struct io_worker *worker, long err)
 {
 	/*
@@ -784,6 +920,11 @@ static inline bool io_should_retry_thread(struct io_worker *worker, long err)
 	}
 }
 
+/*
+queue_create_worker_retry: Schedules a delayed work item to retry worker creation after a short delay. The delay increases with each retry attempt.
+
+Purpose: Provides a mechanism to handle temporary conditions (e.g., signals) that may prevent immediate worker creation.
+*/
 static void queue_create_worker_retry(struct io_worker *worker)
 {
 	/*
@@ -796,6 +937,11 @@ static void queue_create_worker_retry(struct io_worker *worker)
 			      msecs_to_jiffies(worker->init_retries * 5));
 }
 
+/*
+create_worker_cont: A continuation function for worker creation. It attempts to create a thread for the worker and initializes it if successful. If thread creation fails and retries are not allowed, it decrements the running worker count, cancels pending work if no workers remain, and cleans up the worker.
+
+Purpose: Handles the continuation of worker creation, including cleanup and retry logic.
+*/
 static void create_worker_cont(struct callback_head *cb)
 {
 	struct io_worker *worker;
@@ -838,6 +984,11 @@ static void create_worker_cont(struct callback_head *cb)
 	queue_create_worker_retry(worker);
 }
 
+/*
+io_workqueue_create: A delayed work handler that queues a task to create a new worker. If the task fails to queue, the worker is freed.
+
+Purpose: Ensures that worker creation tasks are safely scheduled.
+*/
 static void io_workqueue_create(struct work_struct *work)
 {
 	struct io_worker *worker = container_of(work, struct io_worker,
@@ -848,6 +999,10 @@ static void io_workqueue_create(struct work_struct *work)
 		kfree(worker);
 }
 
+/*
+create_io_worker and create_worker_cont: If worker creation fails and retries are not allowed, the functions decrement the running worker count, remove the worker from the list of workers, and cancel pending work if no workers remain. This ensures that the workqueue remains in a consistent state.
+Purpose: Ensures proper cleanup and resource management in case of worker creation failures.
+*/
 static bool create_io_worker(struct io_wq *wq, struct io_wq_acct *acct)
 {
 	struct io_worker *worker;
@@ -890,6 +1045,11 @@ fail:
  * Iterate the passed in list and call the specific function for each
  * worker that isn't exiting
  */
+ /*
+ io_acct_for_each_worker: Iterates over all workers in a specific accounting structure (io_wq_acct) and applies a given function (func) to each worker that is not exiting. If the function returns true, the iteration stops early.
+
+Purpose: Provides a mechanism to perform operations on all active workers in a specific accounting group.
+ */
 static bool io_acct_for_each_worker(struct io_wq_acct *acct,
 				    bool (*func)(struct io_worker *, void *),
 				    void *data)
@@ -911,6 +1071,11 @@ static bool io_acct_for_each_worker(struct io_wq_acct *acct,
 	return ret;
 }
 
+/*
+io_wq_for_each_worker: Iterates over all workers in the workqueue by calling io_acct_for_each_worker for each accounting structure in the workqueue.
+
+Purpose: Extends the iteration logic to cover all workers in the workqueue.
+*/
 static bool io_wq_for_each_worker(struct io_wq *wq,
 				  bool (*func)(struct io_worker *, void *),
 				  void *data)
@@ -923,6 +1088,10 @@ static bool io_wq_for_each_worker(struct io_wq *wq,
 	return true;
 }
 
+/*
+io_wq_worker_wake: This function wakes up a worker by setting a notification signal (__set_notify_signal) and calling wake_up_process on the worker's task.
+Purpose: Ensures that idle workers are promptly woken up to handle new tasks.
+*/
 static bool io_wq_worker_wake(struct io_worker *worker, void *data)
 {
 	__set_notify_signal(worker->task);
@@ -930,6 +1099,11 @@ static bool io_wq_worker_wake(struct io_worker *worker, void *data)
 	return false;
 }
 
+/*
+io_run_cancel: Cancels a work item by setting the IO_WQ_WORK_CANCEL flag and executing the work's cancellation logic (do_work and free_work) in a loop.
+
+Purpose: Handles the cancellation of a work item, ensuring proper cleanup.
+*/
 static void io_run_cancel(struct io_wq_work *work, struct io_wq *wq)
 {
 	do {
@@ -939,6 +1113,11 @@ static void io_run_cancel(struct io_wq_work *work, struct io_wq *wq)
 	} while (work);
 }
 
+/*
+io_wq_insert_work: Inserts a work item into the accounting structure's work list. If the work is hashed, it ensures that hashed work items are grouped together and processed in order.
+
+Purpose: Organizes work items in the workqueue, supporting both hashed and non-hashed work.
+*/
 static void io_wq_insert_work(struct io_wq *wq, struct io_wq_acct *acct,
 			      struct io_wq_work *work, unsigned int work_flags)
 {
@@ -960,11 +1139,22 @@ append:
 	wq_list_add_after(&work->list, &tail->list, &acct->work_list);
 }
 
+/*
+io_wq_work_match_item: A utility function that checks if a work item matches a given data pointer. It is used as a match function for canceling specific work items.
+
+Purpose: Simplifies matching logic for targeted work cancellation.
+*/
 static bool io_wq_work_match_item(struct io_wq_work *work, void *data)
 {
 	return work == data;
 }
 
+/*
+io_wq_enqueue: This function enqueues a work item into the workqueue. It first checks if the workqueue is exiting or if the work item is marked for cancellation. If so, it cancels the work using io_run_cancel. Otherwise, it inserts the work into the appropriate accounting structure (acct) using io_wq_insert_work.
+
+Worker Creation: If no free workers are available, the function attempts to create a new worker. If worker creation fails and no workers exist, it cancels the pending work.
+Purpose: Adds work items to the workqueue while ensuring proper synchronization and worker availability.
+*/
 void io_wq_enqueue(struct io_wq *wq, struct io_wq_work *work)
 {
 	unsigned int work_flags = atomic_read(&work->flags);
@@ -1019,6 +1209,10 @@ void io_wq_enqueue(struct io_wq *wq, struct io_wq_work *work)
  * Work items that hash to the same value will not be done in parallel.
  * Used to limit concurrent writes, generally hashed by inode.
  */
+ /*
+ io_wq_hash_work: Marks a work item as hashed by calculating a hash value (e.g., based on an inode) and storing it in the work's flags. Hashed work items are not processed in parallel to avoid conflicts (e.g., concurrent writes to the same file).
+Purpose: Limits concurrency for work items that share a common resource, ensuring safe and conflict-free execution.
+ */
 void io_wq_hash_work(struct io_wq_work *work, void *val)
 {
 	unsigned int bit;
@@ -1027,6 +1221,11 @@ void io_wq_hash_work(struct io_wq_work *work, void *val)
 	atomic_or(IO_WQ_WORK_HASHED | (bit << IO_WQ_HASH_SHIFT), &work->flags);
 }
 
+/*
+__io_wq_worker_cancel: Cancels a specific work item being executed by a worker. It sets the IO_WQ_WORK_CANCEL flag on the work and notifies the worker's task to handle the cancellation.
+
+Purpose: Provides a low-level mechanism to cancel a specific work item assigned to a worker.
+*/
 static bool __io_wq_worker_cancel(struct io_worker *worker,
 				  struct io_cb_cancel_data *match,
 				  struct io_wq_work *work)
@@ -1040,6 +1239,11 @@ static bool __io_wq_worker_cancel(struct io_worker *worker,
 	return false;
 }
 
+/*
+io_wq_worker_cancel: A higher-level function that locks the worker's state, checks if the current work matches the cancellation criteria, and increments the count of running cancellations (nr_running) if successful.
+
+Purpose: Ensures thread-safe cancellation of work items currently being executed by workers.
+*/
 static bool io_wq_worker_cancel(struct io_worker *worker, void *data)
 {
 	struct io_cb_cancel_data *match = data;
@@ -1056,6 +1260,11 @@ static bool io_wq_worker_cancel(struct io_worker *worker, void *data)
 	return match->nr_running && !match->cancel_all;
 }
 
+/*
+io_wq_remove_pending: Removes a pending work item from the accounting structure's work list. If the work is hashed, it updates the hash tail pointer to maintain consistency.
+
+Purpose: Ensures proper removal of work items from the pending list while maintaining the integrity of hashed work.
+*/
 static inline void io_wq_remove_pending(struct io_wq *wq,
 					struct io_wq_acct *acct,
 					 struct io_wq_work *work,
@@ -1075,6 +1284,11 @@ static inline void io_wq_remove_pending(struct io_wq *wq,
 	wq_list_del(&acct->work_list, &work->list, prev);
 }
 
+/*
+io_acct_cancel_pending_work: Iterates over the pending work list in the accounting structure and cancels matching work items. It uses a match function (io_cb_cancel_data) to identify work items to cancel.
+
+Purpose: Handles the cancellation of pending work items that have not yet started execution.
+*/
 static bool io_acct_cancel_pending_work(struct io_wq *wq,
 					struct io_wq_acct *acct,
 					struct io_cb_cancel_data *match)
@@ -1099,6 +1313,11 @@ static bool io_acct_cancel_pending_work(struct io_wq *wq,
 	return false;
 }
 
+/*
+io_wq_cancel_pending_work: Iterates over all accounting structures in the workqueue and cancels pending work items. If cancel_all is set, it retries until all matching work items are canceled.
+
+Purpose: Provides a unified mechanism to cancel all or specific pending work items across the workqueue.
+*/
 static void io_wq_cancel_pending_work(struct io_wq *wq,
 				      struct io_cb_cancel_data *match)
 {
@@ -1115,6 +1334,11 @@ retry:
 	}
 }
 
+/*
+io_acct_cancel_running_work: Cancels work items currently being executed by workers in a specific accounting structure. It iterates over all workers and signals cancellation for matching work items.
+
+Purpose: Attempts to cancel work items that are actively running.
+*/
 static void io_acct_cancel_running_work(struct io_wq_acct *acct,
 					struct io_cb_cancel_data *match)
 {
@@ -1123,6 +1347,11 @@ static void io_acct_cancel_running_work(struct io_wq_acct *acct,
 	raw_spin_unlock(&acct->workers_lock);
 }
 
+/*
+io_wq_cancel_running_work: Extends io_acct_cancel_running_work to handle all accounting structures in the workqueue.
+
+Purpose: Provides a unified mechanism to cancel running work items across the workqueue.
+*/
 static void io_wq_cancel_running_work(struct io_wq *wq,
 				       struct io_cb_cancel_data *match)
 {
@@ -1134,6 +1363,11 @@ static void io_wq_cancel_running_work(struct io_wq *wq,
 	rcu_read_unlock();
 }
 
+/*
+io_wq_cancel_cb: A high-level function that handles both pending and running work cancellations. It first tries to cancel pending work and, if unsuccessful, attempts to cancel running work. It returns a status indicating whether the cancellation was successful or if the work was not found.
+
+Purpose: Provides a comprehensive interface for canceling work items in the workqueue.
+*/
 enum io_wq_cancel io_wq_cancel_cb(struct io_wq *wq, work_cancel_fn *cancel,
 				  void *data, bool cancel_all)
 {
@@ -1171,6 +1405,12 @@ enum io_wq_cancel io_wq_cancel_cb(struct io_wq *wq, work_cancel_fn *cancel,
 	return IO_WQ_CANCEL_NOTFOUND;
 }
 
+/*
+io_wq_hash_wake: Handles wake-up events for hashed work items. It clears the stalled flag for accounting structures and activates free workers to process the work.
+
+Purpose: Ensures that stalled hashed work items are promptly processed by available workers.
+
+*/
 static int io_wq_hash_wake(struct wait_queue_entry *wait, unsigned mode,
 			    int sync, void *key)
 {
@@ -1190,6 +1430,11 @@ static int io_wq_hash_wake(struct wait_queue_entry *wait, unsigned mode,
 	return 1;
 }
 
+/*
+io_wq_create: Creates and initializes a new io_wq instance. It allocates memory for the workqueue, sets up CPU affinity, initializes accounting structures, and registers the workqueue with the CPU hotplug subsystem.
+
+Purpose: Dynamically creates a workqueue with bounded and unbounded worker configurations, ensuring proper resource allocation and initialization.
+*/
 struct io_wq *io_wq_create(unsigned bounded, struct io_wq_data *data)
 {
 	int ret, i;
@@ -1247,6 +1492,11 @@ err:
 	return ERR_PTR(ret);
 }
 
+/*
+io_task_work_match: Matches a task's callback with a specific workqueue. It is used to identify and cancel task work associated with the workqueue.
+
+Purpose: Simplifies the identification of task work for cancellation.
+*/
 static bool io_task_work_match(struct callback_head *cb, void *data)
 {
 	struct io_worker *worker;
@@ -1257,11 +1507,21 @@ static bool io_task_work_match(struct callback_head *cb, void *data)
 	return worker->wq == data;
 }
 
+/*
+io_wq_exit_start: Marks the workqueue as exiting by setting the IO_WQ_BIT_EXIT flag.
+
+Purpose: Signals the start of the workqueue shutdown process.
+*/
 void io_wq_exit_start(struct io_wq *wq)
 {
 	set_bit(IO_WQ_BIT_EXIT, &wq->state);
 }
 
+/*
+io_wq_cancel_tw_create: Cancels task work associated with worker creation. It ensures that no new workers are created during the shutdown process.
+
+Purpose: Prevents resource leaks and ensures a clean shutdown of the workqueue.
+*/
 static void io_wq_cancel_tw_create(struct io_wq *wq)
 {
 	struct callback_head *cb;
@@ -1280,6 +1540,11 @@ static void io_wq_cancel_tw_create(struct io_wq *wq)
 	}
 }
 
+/*
+io_wq_exit_workers: Cancels all task work, wakes up all workers, and waits for their completion. It also removes the workqueue from the hash wait list.
+
+Purpose: Ensures a clean and orderly shutdown of all workers in the workqueue.
+*/
 static void io_wq_exit_workers(struct io_wq *wq)
 {
 	if (!wq->task)
@@ -1301,6 +1566,11 @@ static void io_wq_exit_workers(struct io_wq *wq)
 	wq->task = NULL;
 }
 
+/*
+io_wq_destroy: Frees all resources associated with the workqueue, including pending work items, CPU masks, and the workqueue itself.
+
+Purpose: Completes the destruction of the workqueue after all workers have exited.
+*/
 static void io_wq_destroy(struct io_wq *wq)
 {
 	struct io_cb_cancel_data match = {
@@ -1315,6 +1585,11 @@ static void io_wq_destroy(struct io_wq *wq)
 	kfree(wq);
 }
 
+/*
+io_wq_put_and_exit: Combines io_wq_exit_workers and io_wq_destroy to fully shut down and clean up the workqueue.
+
+Purpose: Provides a single entry point for shutting down and destroying the workqueue.
+*/
 void io_wq_put_and_exit(struct io_wq *wq)
 {
 	WARN_ON_ONCE(!test_bit(IO_WQ_BIT_EXIT, &wq->state));
@@ -1328,6 +1603,11 @@ struct online_data {
 	bool online;
 };
 
+/*
+io_wq_worker_affinity: Adjusts the CPU affinity of a worker based on whether a CPU is online or offline.
+
+Purpose: Ensures that workers are only scheduled on available CPUs.
+*/
 static bool io_wq_worker_affinity(struct io_worker *worker, void *data)
 {
 	struct online_data *od = data;
@@ -1339,6 +1619,11 @@ static bool io_wq_worker_affinity(struct io_worker *worker, void *data)
 	return false;
 }
 
+/*
+__io_wq_cpu_online: Updates the CPU affinity of all workers in the workqueue when a CPU comes online or goes offline.
+
+Purpose: Dynamically adjusts worker CPU affinity in response to CPU hotplug events.
+*/
 static int __io_wq_cpu_online(struct io_wq *wq, unsigned int cpu, bool online)
 {
 	struct online_data od = {
@@ -1352,6 +1637,11 @@ static int __io_wq_cpu_online(struct io_wq *wq, unsigned int cpu, bool online)
 	return 0;
 }
 
+/*
+io_wq_cpu_online and io_wq_cpu_offline: Wrapper functions for handling CPU online and offline events, respectively.
+
+Purpose: Integrates the workqueue with the CPU hotplug subsystem.
+*/
 static int io_wq_cpu_online(unsigned int cpu, struct hlist_node *node)
 {
 	struct io_wq *wq = hlist_entry_safe(node, struct io_wq, cpuhp_node);
@@ -1366,6 +1656,11 @@ static int io_wq_cpu_offline(unsigned int cpu, struct hlist_node *node)
 	return __io_wq_cpu_online(wq, cpu, false);
 }
 
+/*
+io_wq_cpu_affinity: Sets or retrieves the CPU affinity mask for the workqueue. It ensures that the requested mask is a subset of the allowed CPUs.
+
+Purpose: Provides a user-facing interface for managing workqueue CPU affinity.
+*/
 int io_wq_cpu_affinity(struct io_uring_task *tctx, cpumask_var_t mask)
 {
 	cpumask_var_t allowed_mask;
@@ -1396,6 +1691,11 @@ int io_wq_cpu_affinity(struct io_uring_task *tctx, cpumask_var_t mask)
 /*
  * Set max number of unbounded workers, returns old value. If new_count is 0,
  * then just return the old value.
+ */
+
+ /*
+ io_wq_max_workers: Sets or retrieves the maximum number of bounded and unbounded workers for the workqueue. It ensures that the limits do not exceed the process's resource limits (RLIMIT_NPROC).
+Purpose: Dynamically adjusts the worker limits to balance resource usage and workload demands.
  */
 int io_wq_max_workers(struct io_wq *wq, int *new_count)
 {
@@ -1433,6 +1733,10 @@ int io_wq_max_workers(struct io_wq *wq, int *new_count)
 	return 0;
 }
 
+/*
+io_wq_init: Registers the workqueue with the CPU hotplug subsystem during system initialization.
+Purpose: Ensures that the workqueue is properly integrated with the system's CPU management infrastructure.
+*/
 static __init int io_wq_init(void)
 {
 	int ret;

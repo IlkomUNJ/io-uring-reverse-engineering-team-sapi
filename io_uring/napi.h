@@ -25,6 +25,14 @@ static inline bool io_napi(struct io_ring_ctx *ctx)
 	return !list_empty(&ctx->napi_list);
 }
 
+/*
+ * io_napi_busy_loop() - execute busy poll loop
+ * @ctx: pointer to io-uring context structure
+ * @iowq: pointer to io wait queue
+ *
+ * Execute the busy poll loop and merge the spliced off list.
+ */
+*/
 static inline void io_napi_busy_loop(struct io_ring_ctx *ctx,
 				     struct io_wait_queue *iowq)
 {
@@ -38,6 +46,9 @@ static inline void io_napi_busy_loop(struct io_ring_ctx *ctx,
  * @req: pointer to io_kiocb request
  *
  * Add the napi id of the socket to the napi busy poll list and hash table.
+ */
+ /*
+ * This function adds the NAPI ID of the socket to the busy poll list and hash table.
  */
 static inline void io_napi_add(struct io_kiocb *req)
 {

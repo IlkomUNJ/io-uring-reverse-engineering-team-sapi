@@ -65,6 +65,10 @@ check_seq:
 	return true;
 }
 
+/*
+The io_cancel_cb function is a static callback function used in the context of the io_uring subsystem to determine whether a specific I/O request matches certain cancellation criteria. 
+It takes two parameters: a pointer to an io_wq_work structure (work), which represents a unit of work in the I/O worker queue, and a generic pointer (data), which is expected to point to an io_cancel_data structure containing the cancellation criteria.
+*/
 static bool io_cancel_cb(struct io_wq_work *work, void *data)
 {
 	struct io_kiocb *req = container_of(work, struct io_kiocb, work);
@@ -73,6 +77,10 @@ static bool io_cancel_cb(struct io_wq_work *work, void *data)
 	return io_cancel_req_match(req, cd);
 }
 
+/*
+The io_async_cancel_one function is part of the io_uring subsystem and is responsible for attempting to cancel a single asynchronous I/O operation. 
+It takes two parameters: a pointer to an io_uring_task structure (tctx), which represents the task context associated with the I/O operations, and a pointer to an io_cancel_data structure (cd), which contains the criteria for cancellation.
+*/
 static int io_async_cancel_one(struct io_uring_task *tctx,
 			       struct io_cancel_data *cd)
 {
@@ -100,6 +108,11 @@ static int io_async_cancel_one(struct io_uring_task *tctx,
 	return ret;
 }
 
+/*
+The io_try_cancel function is part of the io_uring subsystem and is responsible for attempting to cancel an asynchronous I/O operation. 
+It takes three parameters: a pointer to an io_uring_task structure (tctx), which represents the task context associated with the I/O operations; 
+a pointer to an io_cancel_data structure (cd), which contains the criteria for cancellation; and an issue_flags parameter, which provides additional flags influencing the cancellation process.
+*/
 int io_try_cancel(struct io_uring_task *tctx, struct io_cancel_data *cd,
 		  unsigned issue_flags)
 {
@@ -135,6 +148,11 @@ int io_try_cancel(struct io_uring_task *tctx, struct io_cancel_data *cd,
 	return ret;
 }
 
+/*
+The io_async_cancel_prep function is part of the io_uring subsystem and is responsible for preparing a cancellation request for an asynchronous I/O operation. 
+It validates the input parameters and initializes the necessary fields in the io_cancel structure, which represents the cancellation request. 
+The function takes two parameters: a pointer to an io_kiocb structure (req), which represents the I/O request, and a pointer to an io_uring_sqe structure (sqe), which contains the submission queue entry details for the operation.
+*/
 int io_async_cancel_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_cancel *cancel = io_kiocb_to_cmd(req, struct io_cancel);
@@ -162,6 +180,11 @@ int io_async_cancel_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The __io_async_cancel function is part of the io_uring subsystem and is responsible for attempting to cancel one or more asynchronous I/O operations based on the criteria specified in the io_cancel_data structure (cd). 
+It operates within the context of a specific task (tctx) and uses the issue_flags parameter to influence the cancellation process. 
+The function supports both targeted cancellation of a single operation and bulk cancellation of multiple operations.
+*/
 static int __io_async_cancel(struct io_cancel_data *cd,
 			     struct io_uring_task *tctx,
 			     unsigned int issue_flags)
@@ -195,6 +218,11 @@ static int __io_async_cancel(struct io_cancel_data *cd,
 	return all ? nr : ret;
 }
 
+/*
+The io_async_cancel function is part of the io_uring subsystem and is responsible for initiating the cancellation of asynchronous I/O operations. 
+It takes two parameters: a pointer to an io_kiocb structure (req), which represents the I/O request, and an issue_flags parameter, which provides additional flags influencing the cancellation process. 
+This function prepares the necessary data for the cancellation request, validates file descriptors if required, and delegates the actual cancellation logic to the __io_async_cancel function.
+*/
 int io_async_cancel(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_cancel *cancel = io_kiocb_to_cmd(req, struct io_cancel);
@@ -232,6 +260,10 @@ done:
 	return IOU_OK;
 }
 
+/*
+The __io_sync_cancel function is part of the io_uring subsystem and is responsible for synchronously canceling asynchronous I/O operations based on specific criteria. 
+It takes three parameters: a pointer to an io_uring_task structure (tctx), which represents the task context associated with the I/O operations; a pointer to an io_cancel_data structure (cd), which contains the cancellation criteria; and an integer file descriptor (fd), which may be used to identify the target operation.
+*/
 static int __io_sync_cancel(struct io_uring_task *tctx,
 			    struct io_cancel_data *cd, int fd)
 {
@@ -253,6 +285,11 @@ static int __io_sync_cancel(struct io_uring_task *tctx,
 	return __io_async_cancel(cd, tctx, 0);
 }
 
+/*
+The io_sync_cancel function is part of the io_uring subsystem and is responsible for synchronously canceling asynchronous I/O operations based on specific criteria. 
+It operates within the context of an io_ring_ctx structure (ctx) and takes a user-space pointer (arg) as input, which contains the cancellation parameters. 
+The function ensures that the cancellation process is robust, handling retries and timeouts as necessary.
+*/
 int io_sync_cancel(struct io_ring_ctx *ctx, void __user *arg)
 	__must_hold(&ctx->uring_lock)
 {
@@ -342,6 +379,11 @@ out:
 	return ret;
 }
 
+/*
+The io_cancel_remove_all function is part of the io_uring subsystem and is responsible for iterating through a list of I/O requests and attempting to cancel them based on specific criteria. 
+It operates on a hash list (list) of I/O requests and uses a callback function (cancel) to determine whether each request should be canceled. 
+The function returns a boolean value indicating whether any requests were successfully canceled.
+*/
 bool io_cancel_remove_all(struct io_ring_ctx *ctx, struct io_uring_task *tctx,
 			  struct hlist_head *list, bool cancel_all,
 			  bool (*cancel)(struct io_kiocb *))
@@ -363,6 +405,11 @@ bool io_cancel_remove_all(struct io_ring_ctx *ctx, struct io_uring_task *tctx,
 	return found;
 }
 
+/*
+The io_cancel_remove function provides a mechanism for selectively canceling I/O requests from a hash list in the io_uring subsystem. 
+It ensures thread safety through locking, uses a callback function to handle the actual cancellation logic, and supports both single and bulk cancellation modes. 
+By returning the number of canceled requests or an error code, the function allows the caller to handle the cancellation process effectively.
+*/
 int io_cancel_remove(struct io_ring_ctx *ctx, struct io_cancel_data *cd,
 		     unsigned int issue_flags, struct hlist_head *list,
 		     bool (*cancel)(struct io_kiocb *))

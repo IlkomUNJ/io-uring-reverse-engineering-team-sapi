@@ -32,6 +32,11 @@ struct io_provide_buf {
 	__u16				bid;
 };
 
+/*
+io_kbuf_inc_commit: This function commits a specified length of data (len) to a buffer list (io_buffer_list). It iterates through the buffers, reducing their length and advancing the head pointer when a buffer is fully consumed.
+
+Purpose: Ensures that buffers are updated correctly when data is processed incrementally.
+*/
 static bool io_kbuf_inc_commit(struct io_buffer_list *bl, int len)
 {
 	while (len) {
@@ -51,6 +56,11 @@ static bool io_kbuf_inc_commit(struct io_buffer_list *bl, int len)
 	return true;
 }
 
+/*
+io_kbuf_commit: Commits buffers for a request (io_kiocb). Depending on the buffer list's flags, it either increments the head pointer or processes the buffers incrementally using io_kbuf_inc_commit.
+
+Purpose: Finalizes buffer usage for a request, ensuring proper synchronization.
+*/
 bool io_kbuf_commit(struct io_kiocb *req,
 		    struct io_buffer_list *bl, int len, int nr)
 {
@@ -67,6 +77,11 @@ bool io_kbuf_commit(struct io_kiocb *req,
 	return true;
 }
 
+/*
+io_buffer_get_list: Retrieves a buffer list from the context based on its group ID (bgid).
+
+Purpose: Provides access to buffer lists for various operations.
+*/
 static inline struct io_buffer_list *io_buffer_get_list(struct io_ring_ctx *ctx,
 							unsigned int bgid)
 {
@@ -75,6 +90,11 @@ static inline struct io_buffer_list *io_buffer_get_list(struct io_ring_ctx *ctx,
 	return xa_load(&ctx->io_bl_xa, bgid);
 }
 
+/*
+io_buffer_add_list: Adds a buffer list to the context, making it visible for lookups.
+
+Purpose: Registers a buffer list in the context for future use.
+*/
 static int io_buffer_add_list(struct io_ring_ctx *ctx,
 			      struct io_buffer_list *bl, unsigned int bgid)
 {
@@ -87,7 +107,11 @@ static int io_buffer_add_list(struct io_ring_ctx *ctx,
 	guard(mutex)(&ctx->mmap_lock);
 	return xa_err(xa_store(&ctx->io_bl_xa, bgid, bl, GFP_KERNEL));
 }
+/*
+io_kbuf_drop_legacy: Drops a legacy buffer by freeing its memory and clearing the associated flags.
 
+Purpose: Cleans up legacy buffers when they are no longer needed.
+*/
 void io_kbuf_drop_legacy(struct io_kiocb *req)
 {
 	if (WARN_ON_ONCE(!(req->flags & REQ_F_BUFFER_SELECTED)))
@@ -98,6 +122,11 @@ void io_kbuf_drop_legacy(struct io_kiocb *req)
 	req->kbuf = NULL;
 }
 
+/*
+io_kbuf_recycle_legacy: Recycles a legacy buffer by adding it back to the buffer list. It clears the buffer selection flag and updates the buffer index.
+
+Purpose: Reuses buffers in legacy buffer management.
+*/
 bool io_kbuf_recycle_legacy(struct io_kiocb *req, unsigned issue_flags)
 {
 	struct io_ring_ctx *ctx = req->ctx;
@@ -116,6 +145,11 @@ bool io_kbuf_recycle_legacy(struct io_kiocb *req, unsigned issue_flags)
 	return true;
 }
 
+/*
+io_provided_buffer_select: Selects a buffer from a provided buffer list. It removes the buffer from the list, adjusts its length if necessary, and marks the request as having a selected buffer.
+
+Purpose: Allocates a buffer for a request from a pre-provided list.
+*/
 static void __user *io_provided_buffer_select(struct io_kiocb *req, size_t *len,
 					      struct io_buffer_list *bl)
 {
@@ -136,6 +170,11 @@ static void __user *io_provided_buffer_select(struct io_kiocb *req, size_t *len,
 	return NULL;
 }
 
+/*
+Purpose
+The primary purpose of this function is to bridge the gap between the internal buffer management of io_uring and the user-facing iovec structure. By selecting a buffer and mapping it into an iovec, 
+the function prepares the buffer for use in I/O operations, such as reads or writes, that rely on the iovec format.
+*/
 static int io_provided_buffers_select(struct io_kiocb *req, size_t *len,
 				      struct io_buffer_list *bl,
 				      struct iovec *iov)
@@ -151,6 +190,11 @@ static int io_provided_buffers_select(struct io_kiocb *req, size_t *len,
 	return 1;
 }
 
+/*
+io_ring_buffer_select: Selects a buffer from a ring-based buffer list. It retrieves the buffer based on the head pointer, adjusts its length, and marks the request for buffer commitment.
+
+Purpose: Handles buffer selection for ring-based buffer lists, ensuring proper synchronization.
+*/
 static void __user *io_ring_buffer_select(struct io_kiocb *req, size_t *len,
 					  struct io_buffer_list *bl,
 					  unsigned int issue_flags)
@@ -192,6 +236,11 @@ static void __user *io_ring_buffer_select(struct io_kiocb *req, size_t *len,
 	return ret;
 }
 
+/*
+io_buffer_select: A high-level function that selects a buffer for a request. It determines whether to use a ring-based or provided buffer list and delegates the selection accordingly.
+
+Purpose: Provides a unified interface for buffer selection.
+*/
 void __user *io_buffer_select(struct io_kiocb *req, size_t *len,
 			      unsigned int issue_flags)
 {
@@ -215,6 +264,9 @@ void __user *io_buffer_select(struct io_kiocb *req, size_t *len,
 /* cap it at a reasonable 256, will be one page even for 4K */
 #define PEEK_MAX_IMPORT		256
 
+/*
+ * io_ring_buffers_peek: Peeks at the buffers in a ring-based buffer list. It retrieves the buffers based on the head pointer, adjusts their lengths, and prepares them for use.
+*/
 static int io_ring_buffers_peek(struct io_kiocb *req, struct buf_sel_arg *arg,
 				struct io_buffer_list *bl)
 {
@@ -294,6 +346,9 @@ static int io_ring_buffers_peek(struct io_kiocb *req, struct buf_sel_arg *arg,
 	return iov - arg->iovs;
 }
 
+/*
+ * io_buffers_select: Selects buffers for a request. It determines whether to use a ring-based or provided buffer list and delegates the selection accordingly.
+*/
 int io_buffers_select(struct io_kiocb *req, struct buf_sel_arg *arg,
 		      unsigned int issue_flags)
 {
@@ -327,6 +382,9 @@ out_unlock:
 	return ret;
 }
 
+/*
+ * io_buffers_peek: Peeks at the buffers in a buffer list. It retrieves the buffers based on the head pointer, adjusts their lengths, and prepares them for use.
+*/
 int io_buffers_peek(struct io_kiocb *req, struct buf_sel_arg *arg)
 {
 	struct io_ring_ctx *ctx = req->ctx;
@@ -350,6 +408,9 @@ int io_buffers_peek(struct io_kiocb *req, struct buf_sel_arg *arg)
 	return io_provided_buffers_select(req, &arg->max_len, bl, arg->iovs);
 }
 
+/*
+ * __io_put_kbuf_ring: Commits buffers for a request (io_kiocb) in a ring-based buffer list. It finalizes the buffer usage and updates the request's buffer index.
+*/
 static inline bool __io_put_kbuf_ring(struct io_kiocb *req, int len, int nr)
 {
 	struct io_buffer_list *bl = req->buf_list;
@@ -363,6 +424,9 @@ static inline bool __io_put_kbuf_ring(struct io_kiocb *req, int len, int nr)
 	return ret;
 }
 
+/*
+ * __io_put_kbufs: Finalizes the buffer usage for a request (io_kiocb) and returns the appropriate flags.
+*/
 unsigned int __io_put_kbufs(struct io_kiocb *req, int len, int nbufs)
 {
 	unsigned int ret;
@@ -379,6 +443,9 @@ unsigned int __io_put_kbufs(struct io_kiocb *req, int len, int nbufs)
 	return ret;
 }
 
+/*
+ * __io_remove_buffers: Removes buffers from a buffer list. It handles both ring-based and provided buffer lists, freeing the memory as necessary.
+*/
 static int __io_remove_buffers(struct io_ring_ctx *ctx,
 			       struct io_buffer_list *bl, unsigned nbufs)
 {
@@ -415,6 +482,12 @@ static int __io_remove_buffers(struct io_ring_ctx *ctx,
 	return i;
 }
 
+/*
+ io_put_bl: Frees all buffers in a buffer list and deallocates the list itself.
+
+Purpose: Ensures proper cleanup of buffer lists.
+
+*/
 static void io_put_bl(struct io_ring_ctx *ctx, struct io_buffer_list *bl)
 {
 	__io_remove_buffers(ctx, bl, -1U);
@@ -439,6 +512,12 @@ void io_destroy_buffers(struct io_ring_ctx *ctx)
 	}
 }
 
+/*
+ * io_destroy_bl: Destroys a buffer list by erasing it from the context's
+ * buffer list tree and freeing its memory.
+ *
+ * Purpose: Cleans up buffer lists when they are no longer
+*/
 static void io_destroy_bl(struct io_ring_ctx *ctx, struct io_buffer_list *bl)
 {
 	scoped_guard(mutex, &ctx->mmap_lock)
@@ -446,6 +525,11 @@ static void io_destroy_bl(struct io_ring_ctx *ctx, struct io_buffer_list *bl)
 	io_put_bl(ctx, bl);
 }
 
+/*
+ * io_remove_buffers_prep: Prepares a request for removing buffers. It checks the validity of the parameters and initializes the request structure.
+ *
+ * Purpose: Validates and prepares the request for buffer removal operations.
+*/
 int io_remove_buffers_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_provide_buf *p = io_kiocb_to_cmd(req, struct io_provide_buf);
@@ -465,6 +549,11 @@ int io_remove_buffers_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_remove_buffers: Removes buffers from a buffer list. It handles both ring-based and provided buffer lists, freeing the memory as necessary.
+ *
+ * Purpose: Cleans up buffer lists when they are no longer needed.
+*/
 int io_remove_buffers(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_provide_buf *p = io_kiocb_to_cmd(req, struct io_provide_buf);
@@ -489,6 +578,11 @@ int io_remove_buffers(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ * io_provide_buffers_prep: Prepares a request for providing buffers. It checks the validity of the parameters and initializes the request structure.
+ *
+ * Purpose: Validates and prepares the request for buffer provision operations.
+*/
 int io_provide_buffers_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	unsigned long size, tmp_check;
@@ -525,6 +619,11 @@ int io_provide_buffers_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe
 	return 0;
 }
 
+/*
+ * io_add_buffers: Adds buffers to a buffer list. It allocates memory for the buffers and initializes their properties.
+ *
+ * Purpose: Prepares buffers for use in I/O operations.
+*/
 static int io_add_buffers(struct io_ring_ctx *ctx, struct io_provide_buf *pbuf,
 			  struct io_buffer_list *bl)
 {
@@ -550,6 +649,11 @@ static int io_add_buffers(struct io_ring_ctx *ctx, struct io_provide_buf *pbuf,
 	return i ? 0 : -ENOMEM;
 }
 
+/*
+ * io_provide_buffers: Provides buffers to a buffer list. It handles both ring-based and provided buffer lists, adding the buffers as necessary.
+ *
+ * Purpose: Supplies buffers for use in I/O operations.
+*/
 int io_provide_buffers(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_provide_buf *p = io_kiocb_to_cmd(req, struct io_provide_buf);
@@ -589,6 +693,11 @@ err:
 	return IOU_OK;
 }
 
+/*
+ * io_register_pbuf_ring: Registers a provided buffer ring with the context. It sets up the buffer ring and initializes its properties.
+ *
+ * Purpose: Configures a buffer ring for use in I/O operations.
+*/
 int io_register_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 {
 	struct io_uring_buf_reg reg;
@@ -671,6 +780,11 @@ fail:
 	return ret;
 }
 
+/*
+ * io_unregister_pbuf_ring: Unregisters a provided buffer ring from the context. It cleans up the buffer ring and deallocates its resources.
+ *
+ * Purpose: Cleans up a buffer ring when it is no longer needed.
+*/
 int io_unregister_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 {
 	struct io_uring_buf_reg reg;
@@ -698,6 +812,11 @@ int io_unregister_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 	return 0;
 }
 
+/*
+ * io_register_pbuf_status: Registers the status of a provided buffer ring. It retrieves the status and updates the user space with the information.
+ *
+ * Purpose: Provides status information about a buffer ring to user space.
+*/
 int io_register_pbuf_status(struct io_ring_ctx *ctx, void __user *arg)
 {
 	struct io_uring_buf_status buf_status;
@@ -724,6 +843,11 @@ int io_register_pbuf_status(struct io_ring_ctx *ctx, void __user *arg)
 	return 0;
 }
 
+/*
+ * io_pbuf_get_region: Retrieves the region of a provided buffer ring. It checks the validity of the buffer group ID and returns the associated region.
+ *
+ * Purpose: Provides access to the memory region of a buffer ring.
+*/
 struct io_mapped_region *io_pbuf_get_region(struct io_ring_ctx *ctx,
 					    unsigned int bgid)
 {

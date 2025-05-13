@@ -84,6 +84,13 @@ bool io_kbuf_commit(struct io_kiocb *req,
 struct io_mapped_region *io_pbuf_get_region(struct io_ring_ctx *ctx,
 					    unsigned int bgid);
 
+/*
+ * io_kbuf_recycle_ring: Recycles a buffer in a ring-based buffer list. It
+ * clears the buffer selection flag and updates the buffer index.
+ *
+ * Purpose: Reuses buffers in ring-based buffer management.
+ */
+*/						
 static inline bool io_kbuf_recycle_ring(struct io_kiocb *req)
 {
 	/*
@@ -101,6 +108,13 @@ static inline bool io_kbuf_recycle_ring(struct io_kiocb *req)
 	return false;
 }
 
+/*
+ * io_do_buffer_select: Determines if a request should select a buffer. It checks
+ * the REQ_F_BUFFER_SELECT flag and ensures that the request is not already
+ * selected or part of a ring.
+ *
+ * Purpose: Simplifies buffer selection logic for requests.
+*/
 static inline bool io_do_buffer_select(struct io_kiocb *req)
 {
 	if (!(req->flags & REQ_F_BUFFER_SELECT))
@@ -108,6 +122,13 @@ static inline bool io_do_buffer_select(struct io_kiocb *req)
 	return !(req->flags & (REQ_F_BUFFER_SELECTED|REQ_F_BUFFER_RING));
 }
 
+/*
+ * io_kbuf_recycle: Recycles a buffer based on the request's flags. It checks if
+ * the request is marked for recycling and calls the appropriate recycling
+ * function based on the buffer type.
+ *
+ * Purpose: Manages buffer recycling for different buffer types.
+*/
 static inline bool io_kbuf_recycle(struct io_kiocb *req, unsigned issue_flags)
 {
 	if (req->flags & REQ_F_BL_NO_RECYCLE)
@@ -119,6 +140,12 @@ static inline bool io_kbuf_recycle(struct io_kiocb *req, unsigned issue_flags)
 	return false;
 }
 
+/*
+ * io_put_kbuf: Finalizes the buffer usage for a request (io_kiocb) and returns
+ * the appropriate flags. It handles both ring-based and provided buffer lists.
+ *
+ * Purpose: Ensures proper cleanup of buffers after use.
+*/
 static inline unsigned int io_put_kbuf(struct io_kiocb *req, int len,
 				       unsigned issue_flags)
 {
@@ -127,6 +154,13 @@ static inline unsigned int io_put_kbuf(struct io_kiocb *req, int len,
 	return __io_put_kbufs(req, len, 1);
 }
 
+/*
+ * io_put_kbufs: Finalizes the buffer usage for a request (io_kiocb) and
+ * returns the appropriate flags. It handles both ring-based and provided
+ * buffer lists.
+ *
+ * Purpose: Ensures proper cleanup of buffers after use.
+*/
 static inline unsigned int io_put_kbufs(struct io_kiocb *req, int len,
 					int nbufs, unsigned issue_flags)
 {

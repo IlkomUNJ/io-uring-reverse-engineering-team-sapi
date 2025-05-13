@@ -102,6 +102,13 @@ static int io_sg_from_iter_iovec(struct sk_buff *skb,
 static int io_sg_from_iter(struct sk_buff *skb,
 			   struct iov_iter *from, size_t length);
 
+/* io_shutdown_prep - prepare the shutdown request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the shutdown request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_shutdown_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_shutdown *shutdown = io_kiocb_to_cmd(req, struct io_shutdown);
@@ -115,6 +122,14 @@ int io_shutdown_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_shutdown - perform the shutdown request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the shutdown request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_shutdown(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_shutdown *shutdown = io_kiocb_to_cmd(req, struct io_shutdown);
@@ -132,6 +147,15 @@ int io_shutdown(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+
+/*
+ * io_net_retry - check if we should retry the request
+ * @sock: the socket to check
+ * @flags: flags from the submitter
+ *
+ * This is used to check if we should retry the request. We need to ensure that
+ * we don't leak the file reference.
+ */
 static bool io_net_retry(struct socket *sock, int flags)
 {
 	if (!(flags & MSG_WAITALL))
@@ -139,12 +163,28 @@ static bool io_net_retry(struct socket *sock, int flags)
 	return sock->type == SOCK_STREAM || sock->type == SOCK_SEQPACKET;
 }
 
+/*
+ * io_netmsg_iovec_free - free the iovec
+ * @kmsg: the message to free
+ *
+ * This is used to free the iovec. We need to ensure that we
+ * don't leak the file reference.
+ */
+
 static void io_netmsg_iovec_free(struct io_async_msghdr *kmsg)
 {
 	if (kmsg->vec.iovec)
 		io_vec_free(&kmsg->vec);
 }
 
+/*
+ * io_netmsg_recycle - recycle the message
+ * @req: the request to recycle
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to recycle the message. We need to ensure that we
+ * don't leak the file reference.
+ */
 static void io_netmsg_recycle(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_async_msghdr *hdr = req->async_data;
@@ -166,6 +206,13 @@ static void io_netmsg_recycle(struct io_kiocb *req, unsigned int issue_flags)
 	}
 }
 
+/*
+ * io_msg_alloc_async - allocate the async message
+ * @req: the request to allocate
+ *
+ * This is used to allocate the async message. We need to ensure that we
+ * don't leak the file reference.
+ */
 static struct io_async_msghdr *io_msg_alloc_async(struct io_kiocb *req)
 {
 	struct io_ring_ctx *ctx = req->ctx;
@@ -181,6 +228,14 @@ static struct io_async_msghdr *io_msg_alloc_async(struct io_kiocb *req)
 	return hdr;
 }
 
+/*
+ * io_mshot_prep_retry - prepare the multishot retry
+ * @req: the request to prepare
+ * @kmsg: the message to prepare
+ *
+ * This is used to prepare the multishot retry. We need to ensure that we
+ * don't leak the file reference.
+ */
 static inline void io_mshot_prep_retry(struct io_kiocb *req,
 				       struct io_async_msghdr *kmsg)
 {
@@ -193,6 +248,17 @@ static inline void io_mshot_prep_retry(struct io_kiocb *req,
 	req->buf_index = sr->buf_group;
 }
 
+/*
+ * io_net_import_vec - import the iovec
+ * @req: the request to import
+ * @iomsg: the message to import
+ * @uiov: the user iovec to import
+ * @uvec_seg: the user iovec segment
+ * @ddir: the direction of the message
+ *
+ * This is used to import the iovec. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_net_import_vec(struct io_kiocb *req, struct io_async_msghdr *iomsg,
 			     const struct iovec __user *uiov, unsigned uvec_seg,
 			     int ddir)
@@ -220,6 +286,18 @@ static int io_net_import_vec(struct io_kiocb *req, struct io_async_msghdr *iomsg
 	return 0;
 }
 
+/*
+ * io_compat_msg_copy_hdr - copy the message header
+ * @req: the request to copy
+ * @iomsg: the message to copy
+ * @msg: the message to copy
+ * @ddir: the direction of the message
+ * @save_addr: the address to save
+ *
+ * This is used to copy the message header. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_compat_msg_copy_hdr(struct io_kiocb *req,
 				  struct io_async_msghdr *iomsg,
 				  struct compat_msghdr *msg, int ddir,
@@ -253,6 +331,15 @@ static int io_compat_msg_copy_hdr(struct io_kiocb *req,
 	return 0;
 }
 
+/*
+ * io_copy_msghdr_from_user - copy the message header from user
+ * @msg: the message to copy
+ * @umsg: the message to copy
+ *
+ * This is used to copy the message header from user. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_copy_msghdr_from_user(struct user_msghdr *msg,
 				    struct user_msghdr __user *umsg)
 {
@@ -271,6 +358,15 @@ ua_end:
 	return -EFAULT;
 }
 
+/*
+ * io_copy_msghdr - copy the message header
+ * @msg: the message to copy
+ * @umsg: the message to copy
+ *
+ * This is used to copy the message header. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_msg_copy_hdr(struct io_kiocb *req, struct io_async_msghdr *iomsg,
 			   struct user_msghdr *msg, int ddir,
 			   struct sockaddr __user **save_addr)
@@ -324,6 +420,14 @@ static int io_msg_copy_hdr(struct io_kiocb *req, struct io_async_msghdr *iomsg,
 	return 0;
 }
 
+/*
+ * io_sendmsg_recvmsg_cleanup - cleanup the sendmsg/recvmsg request
+ * @req: the request to cleanup
+ *
+ * This is used to cleanup the sendmsg/recvmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 void io_sendmsg_recvmsg_cleanup(struct io_kiocb *req)
 {
 	struct io_async_msghdr *io = req->async_data;
@@ -331,6 +435,15 @@ void io_sendmsg_recvmsg_cleanup(struct io_kiocb *req)
 	io_netmsg_iovec_free(io);
 }
 
+/*
+ * io_send_setup - setup the sendmsg request
+ * @req: the request to setup
+ * @sqe: the submission queue entry
+ *
+ * This is used to setup the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_send_setup(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -370,6 +483,15 @@ static int io_send_setup(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_sendmsg_setup - setup the sendmsg request
+ * @req: the request to setup
+ * @sqe: the submission queue entry
+ *
+ * This is used to setup the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_sendmsg_setup(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -396,6 +518,15 @@ static int io_sendmsg_setup(struct io_kiocb *req, const struct io_uring_sqe *sqe
 
 #define SENDMSG_FLAGS (IORING_RECVSEND_POLL_FIRST | IORING_RECVSEND_BUNDLE)
 
+/*
+ * io_sendmsg_prep - prepare the sendmsg request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 int io_sendmsg_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -432,6 +563,14 @@ int io_sendmsg_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return io_sendmsg_setup(req, sqe);
 }
 
+/*
+ * io_req_msg_cleanup - cleanup the sendmsg request
+ * @req: the request to cleanup
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to cleanup the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static void io_req_msg_cleanup(struct io_kiocb *req,
 			       unsigned int issue_flags)
 {
@@ -445,6 +584,9 @@ static void io_req_msg_cleanup(struct io_kiocb *req,
  * the segments, then it's a trivial questiont o answer. If we have residual
  * data in the iter, then loop the segments to figure out how much we
  * transferred.
+ */
+ /*
+ * io_bundle_nbufs - count the number of buffers in a bundle
  */
 static int io_bundle_nbufs(struct io_async_msghdr *kmsg, int ret)
 {
@@ -477,6 +619,17 @@ static int io_bundle_nbufs(struct io_async_msghdr *kmsg, int ret)
 	return nbufs;
 }
 
+/*
+ * io_send_finish - finish the sendmsg request
+ * @req: the request to finish
+ * @ret: the return value
+ * @kmsg: the message to finish
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to finish the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static inline bool io_send_finish(struct io_kiocb *req, int *ret,
 				  struct io_async_msghdr *kmsg,
 				  unsigned issue_flags)
@@ -511,6 +664,14 @@ finish:
 	return true;
 }
 
+/*
+ * io_sendmsg - perform the sendmsg request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_sendmsg(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -561,6 +722,15 @@ int io_sendmsg(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ * io_send_select_buffer - select the buffer for the sendmsg request
+ * @req: the request to select
+ * @issue_flags: flags from the submitter
+ * @kmsg: the message to select
+ *
+ * This is used to select the buffer for the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_send_select_buffer(struct io_kiocb *req, unsigned int issue_flags,
 				 struct io_async_msghdr *kmsg)
 {
@@ -609,6 +779,14 @@ static int io_send_select_buffer(struct io_kiocb *req, unsigned int issue_flags,
 	return 0;
 }
 
+/*
+ * io_send - perform the send request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the send request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_send(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -675,6 +853,16 @@ retry_bundle:
 	return ret;
 }
 
+/*
+ * io_recvmsg_mshot_prep - prepare the multishot request
+ * @req: the request to prepare
+ * @iomsg: the message to prepare
+ * @namelen: the name length
+ * @controllen: the control length
+ *
+ * This is used to prepare the multishot request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_recvmsg_mshot_prep(struct io_kiocb *req,
 				 struct io_async_msghdr *iomsg,
 				 int namelen, size_t controllen)
@@ -699,6 +887,14 @@ static int io_recvmsg_mshot_prep(struct io_kiocb *req,
 	return 0;
 }
 
+/*
+ * io_recvmsg_copy_hdr - copy the message header
+ * @req: the request to copy
+ * @iomsg: the message to copy
+ *
+ * This is used to copy the message header. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_recvmsg_copy_hdr(struct io_kiocb *req,
 			       struct io_async_msghdr *iomsg)
 {
@@ -719,6 +915,13 @@ static int io_recvmsg_copy_hdr(struct io_kiocb *req,
 					msg.msg_controllen);
 }
 
+/*
+ * io_recvmsg_prep_setup - setup the recvmsg request
+ * @req: the request to setup
+ *
+ * This is used to setup the recvmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_recvmsg_prep_setup(struct io_kiocb *req)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -754,6 +957,14 @@ static int io_recvmsg_prep_setup(struct io_kiocb *req)
 #define RECVMSG_FLAGS (IORING_RECVSEND_POLL_FIRST | IORING_RECV_MULTISHOT | \
 			IORING_RECVSEND_BUNDLE)
 
+/*
+ * io_recvmsg_prep - prepare the recvmsg request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the recvmsg request. We need to ensure that we
+ * don't leak the file reference.
+*/
 int io_recvmsg_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -816,6 +1027,9 @@ int io_recvmsg_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
  * Returns true if it is actually finished, or false if it should run
  * again (for multishot).
  */
+ /*
+ * io_recv_finish - finish the recvmsg request
+ */
 static inline bool io_recv_finish(struct io_kiocb *req, int *ret,
 				  struct io_async_msghdr *kmsg,
 				  bool mshot_finished, unsigned issue_flags)
@@ -874,6 +1088,16 @@ finish:
 	return true;
 }
 
+/*
+ * io_recvmsg_prep_multishot - prepare the multishot request
+ * @kmsg: the message to prepare
+ * @sr: the request to prepare
+ * @buf: the buffer to prepare
+ * @len: the length to prepare
+ *
+ * This is used to prepare the multishot request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_recvmsg_prep_multishot(struct io_async_msghdr *kmsg,
 				     struct io_sr_msg *sr, void __user **buf,
 				     size_t *len)
@@ -903,6 +1127,18 @@ struct io_recvmsg_multishot_hdr {
 	struct io_uring_recvmsg_out msg;
 	struct sockaddr_storage addr;
 };
+
+/*
+ * io_recvmsg_multishot - receive a message from a socket
+ * @sock: the socket to receive from
+ * @io: the request to receive
+ * @kmsg: the message to receive
+ * @flags: the flags to use
+ * @finished: whether the request is finished
+ *
+ * This is used to receive a message from a socket. We need to ensure that we
+ * don't leak the file reference.
+ */
 
 static int io_recvmsg_multishot(struct socket *sock, struct io_sr_msg *io,
 				struct io_async_msghdr *kmsg,
@@ -958,6 +1194,14 @@ static int io_recvmsg_multishot(struct socket *sock, struct io_sr_msg *io,
 			kmsg->controllen + err;
 }
 
+/*
+ * io_recvmsg - perform the recvmsg request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the recvmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_recvmsg(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1046,6 +1290,16 @@ retry_multishot:
 	return ret;
 }
 
+/*
+ * io_recv_buf_select - select the buffer for the recvmsg request
+ * @req: the request to select
+ * @kmsg: the message to select
+ * @len: the length to select
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to select the buffer for the recvmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_recv_buf_select(struct io_kiocb *req, struct io_async_msghdr *kmsg,
 			      size_t *len, unsigned int issue_flags)
 {
@@ -1110,6 +1364,14 @@ map_ubuf:
 	return 0;
 }
 
+/*
+ * io_recv - perform the recv request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the recv request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_recv(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1186,6 +1448,14 @@ out_free:
 	return ret;
 }
 
+/*
+ * io_recvzc_prep - prepare the recvzc request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the recvzc request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_recvzc_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_recvzc *zc = io_kiocb_to_cmd(req, struct io_recvzc);
@@ -1217,6 +1487,14 @@ int io_recvzc_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_recvzc - perform the recvzc request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the recvzc request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_recvzc(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_recvzc *zc = io_kiocb_to_cmd(req, struct io_recvzc);
@@ -1253,6 +1531,13 @@ int io_recvzc(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_RETRY;
 }
 
+/*
+ * io_send_zc_cleanup - cleanup the sendzc request
+ * @req: the request to cleanup
+ *
+ * This is used to cleanup the sendzc request. We need to ensure that we
+ * don't leak the file reference.
+ */
 void io_send_zc_cleanup(struct io_kiocb *req)
 {
 	struct io_sr_msg *zc = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1269,6 +1554,14 @@ void io_send_zc_cleanup(struct io_kiocb *req)
 #define IO_ZC_FLAGS_COMMON (IORING_RECVSEND_POLL_FIRST | IORING_RECVSEND_FIXED_BUF)
 #define IO_ZC_FLAGS_VALID  (IO_ZC_FLAGS_COMMON | IORING_SEND_ZC_REPORT_USAGE)
 
+/*
+ * io_send_zc_prep - prepare the sendzc request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the sendzc request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_send_zc_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sr_msg *zc = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1340,6 +1633,15 @@ int io_send_zc_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_sg_from_iter_iovec - fill the skb from the iovec
+ * @skb: the socket buffer to fill
+ * @from: the iovec to fill from
+ * @length: the length to fill
+ *
+ * This is used to fill the socket buffer from the iovec. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_sg_from_iter_iovec(struct sk_buff *skb,
 				 struct iov_iter *from, size_t length)
 {
@@ -1347,6 +1649,15 @@ static int io_sg_from_iter_iovec(struct sk_buff *skb,
 	return zerocopy_fill_skb_from_iter(skb, from, length);
 }
 
+/*
+ * io_sg_from_iter - fill the skb from the iovec
+ * @skb: the socket buffer to fill
+ * @from: the iovec to fill from
+ * @length: the length to fill
+ *
+ * This is used to fill the socket buffer from the iovec. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_sg_from_iter(struct sk_buff *skb,
 			   struct iov_iter *from, size_t length)
 {
@@ -1390,6 +1701,14 @@ static int io_sg_from_iter(struct sk_buff *skb,
 	return ret;
 }
 
+/*
+ * io_send_zc_import - import the sendzc request
+ * @req: the request to import
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to import the sendzc request. We need to ensure that we
+ * don't leak the file reference.
+ */
 static int io_send_zc_import(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1403,6 +1722,14 @@ static int io_send_zc_import(struct io_kiocb *req, unsigned int issue_flags)
 				ITER_SOURCE, issue_flags);
 }
 
+/*
+ * io_send_zc - perform the sendzc request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the sendzc request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_send_zc(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *zc = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1473,6 +1800,15 @@ int io_send_zc(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ * io_sendmsg_zc - perform the sendmsg request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the sendmsg request. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 int io_sendmsg_zc(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1544,6 +1880,13 @@ int io_sendmsg_zc(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ * io_sendrecv_fail - fail the send/recv request
+ * @req: the request to fail
+ *
+ * This is used to fail the send/recv request. We need to ensure that we
+ * don't leak the file reference.
+ */
 void io_sendrecv_fail(struct io_kiocb *req)
 {
 	struct io_sr_msg *sr = io_kiocb_to_cmd(req, struct io_sr_msg);
@@ -1559,6 +1902,14 @@ void io_sendrecv_fail(struct io_kiocb *req)
 #define ACCEPT_FLAGS	(IORING_ACCEPT_MULTISHOT | IORING_ACCEPT_DONTWAIT | \
 			 IORING_ACCEPT_POLL_FIRST)
 
+/*
+ * io_accept_prep - prepare the accept request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the accept request. We need to ensure that we
+ * don't leak the file reference.
+*/
 int io_accept_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_accept *accept = io_kiocb_to_cmd(req, struct io_accept);
@@ -1593,6 +1944,14 @@ int io_accept_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_accept - perform the accept request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the accept request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_accept(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_accept *accept = io_kiocb_to_cmd(req, struct io_accept);
@@ -1654,6 +2013,14 @@ retry:
 	return IOU_COMPLETE;
 }
 
+/*
+ * io_socket_prep - prepare the socket request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the socket request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_socket_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_socket *sock = io_kiocb_to_cmd(req, struct io_socket);
@@ -1675,6 +2042,14 @@ int io_socket_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_socket - perform the socket request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the socket request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_socket(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_socket *sock = io_kiocb_to_cmd(req, struct io_socket);
@@ -1708,6 +2083,15 @@ int io_socket(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ * io_connect_prep - prepare the connect request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the connect request. We need to ensure that we
+ * don't leak the file reference.
+ */
+
 int io_connect_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_connect *conn = io_kiocb_to_cmd(req, struct io_connect);
@@ -1727,6 +2111,14 @@ int io_connect_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return move_addr_to_kernel(conn->addr, conn->addr_len, &io->addr);
 }
 
+/*
+ * io_connect - perform the connect request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the connect request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_connect(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_connect *connect = io_kiocb_to_cmd(req, struct io_connect);
@@ -1775,6 +2167,14 @@ out:
 	return IOU_OK;
 }
 
+/*
+ * io_bind_prep - prepare the bind request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the bind request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_bind_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_bind *bind = io_kiocb_to_cmd(req, struct io_bind);
@@ -1793,6 +2193,14 @@ int io_bind_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return move_addr_to_kernel(uaddr, bind->addr_len, &io->addr);
 }
 
+/*
+ * io_bind - perform the bind request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the bind request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_bind(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_bind *bind = io_kiocb_to_cmd(req, struct io_bind);
@@ -1811,6 +2219,14 @@ int io_bind(struct io_kiocb *req, unsigned int issue_flags)
 	return 0;
 }
 
+/*
+ * io_listen_prep - prepare the listen request
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the listen request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_listen_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_listen *listen = io_kiocb_to_cmd(req, struct io_listen);
@@ -1822,6 +2238,14 @@ int io_listen_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * io_listen - perform the listen request
+ * @req: the request to perform
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to perform the listen request. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_listen(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_listen *listen = io_kiocb_to_cmd(req, struct io_listen);
@@ -1839,6 +2263,13 @@ int io_listen(struct io_kiocb *req, unsigned int issue_flags)
 	return 0;
 }
 
+/*
+ * io_netmsg_cache_free - free the netmsg cache
+ * @entry: the entry to free
+ *
+ * This is used to free the netmsg cache. We need to ensure that we
+ * don't leak the file reference.
+ */
 void io_netmsg_cache_free(const void *entry)
 {
 	struct io_async_msghdr *kmsg = (struct io_async_msghdr *) entry;

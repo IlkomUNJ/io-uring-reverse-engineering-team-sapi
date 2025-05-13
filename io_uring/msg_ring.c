@@ -33,10 +33,21 @@ struct io_msg {
 	u32 flags;
 };
 
+
 static void io_double_unlock_ctx(struct io_ring_ctx *octx)
 {
 	mutex_unlock(&octx->uring_lock);
 }
+
+/*
+ * io_lock_external_ctx - lock the target ctx
+ * @octx: target ctx
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to lock the target ctx when we are in a different
+ * thread context. We need to ensure that we don't deadlock if
+ * the target ctx is already locked by the submitter.
+ */
 
 static int io_lock_external_ctx(struct io_ring_ctx *octx,
 				unsigned int issue_flags)
@@ -55,6 +66,14 @@ static int io_lock_external_ctx(struct io_ring_ctx *octx,
 	return 0;
 }
 
+/*
+ * io_msg_ring_cleanup - cleanup the msg ring
+ * @req: the request to cleanup
+ *
+ * This is used to cleanup the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
+
 void io_msg_ring_cleanup(struct io_kiocb *req)
 {
 	struct io_msg *msg = io_kiocb_to_cmd(req, struct io_msg);
@@ -66,10 +85,28 @@ void io_msg_ring_cleanup(struct io_kiocb *req)
 	msg->src_file = NULL;
 }
 
+/*
+ * io_msg_need_remote - check if we need to send the msg to the remote ctx
+ * @target_ctx: target ctx
+ *
+ * This is used to check if we need to send the msg to the remote ctx.
+ * We need to ensure that we don't deadlock if the target ctx is already
+ * locked by the submitter.
+ */
+
 static inline bool io_msg_need_remote(struct io_ring_ctx *target_ctx)
 {
 	return target_ctx->task_complete;
 }
+
+/*
+ * io_msg_tw_complete - complete the msg ring
+ * @req: the request to complete
+ * @tw: the task work to complete
+ *
+ * This is used to complete the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
 
 static void io_msg_tw_complete(struct io_kiocb *req, io_tw_token_t tw)
 {
@@ -86,6 +123,10 @@ static void io_msg_tw_complete(struct io_kiocb *req, io_tw_token_t tw)
 	percpu_ref_put(&ctx->refs);
 }
 
+/*
+ * io_msg_remote_post - post the msg to the remote ctx
+ *
+*/
 static int io_msg_remote_post(struct io_ring_ctx *ctx, struct io_kiocb *req,
 			      int res, u32 cflags, u64 user_data)
 {
@@ -104,6 +145,14 @@ static int io_msg_remote_post(struct io_ring_ctx *ctx, struct io_kiocb *req,
 	return 0;
 }
 
+/*
+ * io_msg_get_kiocb - get a kiocb for the msg ring
+ * @ctx: the target ctx
+ *
+ * This is used to get a kiocb for the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
+
 static struct io_kiocb *io_msg_get_kiocb(struct io_ring_ctx *ctx)
 {
 	struct io_kiocb *req = NULL;
@@ -116,6 +165,15 @@ static struct io_kiocb *io_msg_get_kiocb(struct io_ring_ctx *ctx)
 	}
 	return kmem_cache_alloc(req_cachep, GFP_KERNEL | __GFP_NOWARN | __GFP_ZERO);
 }
+
+/*
+ * io_msg_data_remote - post the msg to the remote ctx
+ * @target_ctx: target ctx
+ * @msg: the msg to post
+ *
+ * This is used to post the msg to the remote ctx. We need to ensure that we
+ * don't leak the file reference.
+ */
 
 static int io_msg_data_remote(struct io_ring_ctx *target_ctx,
 			      struct io_msg *msg)
@@ -133,6 +191,16 @@ static int io_msg_data_remote(struct io_ring_ctx *target_ctx,
 	return io_msg_remote_post(target_ctx, target, msg->len, flags,
 					msg->user_data);
 }
+
+/*
+ * __io_msg_ring_data - post the msg to the target ctx
+ * @target_ctx: target ctx
+ * @msg: the msg to post
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to post the msg to the target ctx. We need to ensure that we
+ * don't leak the file reference.
+ */
 
 static int __io_msg_ring_data(struct io_ring_ctx *target_ctx,
 			      struct io_msg *msg, unsigned int issue_flags)
@@ -165,6 +233,15 @@ static int __io_msg_ring_data(struct io_ring_ctx *target_ctx,
 	return ret;
 }
 
+/*
+ * io_msg_ring_data - post the msg to the target ctx
+ * @req: the request to post
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to post the msg to the target ctx. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_msg_ring_data(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_ring_ctx *target_ctx = req->file->private_data;
@@ -173,6 +250,15 @@ static int io_msg_ring_data(struct io_kiocb *req, unsigned int issue_flags)
 	return __io_msg_ring_data(target_ctx, msg, issue_flags);
 }
 
+/*
+ * io_msg_grab_file - grab the file for the msg ring
+ * @req: the request to grab
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to grab the file for the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_msg_grab_file(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_msg *msg = io_kiocb_to_cmd(req, struct io_msg);
@@ -193,6 +279,15 @@ static int io_msg_grab_file(struct io_kiocb *req, unsigned int issue_flags)
 	return ret;
 }
 
+/*
+ * io_msg_install_complete - install the file descriptor
+ * @req: the request to install
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to install the file descriptor. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_msg_install_complete(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_ring_ctx *target_ctx = req->file->private_data;
@@ -225,6 +320,13 @@ out_unlock:
 	return ret;
 }
 
+/*
+ * io_msg_tw_fd_complete - complete the msg ring
+ * @head: the task work to complete
+ *
+ * This is used to complete the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
 static void io_msg_tw_fd_complete(struct callback_head *head)
 {
 	struct io_msg *msg = container_of(head, struct io_msg, tw);
@@ -238,6 +340,14 @@ static void io_msg_tw_fd_complete(struct callback_head *head)
 	io_req_queue_tw_complete(req, ret);
 }
 
+/*
+ * io_msg_fd_remote - post the msg to the remote ctx
+ * @req: the request to post
+ *
+ * This is used to post the msg to the remote ctx. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_msg_fd_remote(struct io_kiocb *req)
 {
 	struct io_ring_ctx *ctx = req->file->private_data;
@@ -254,6 +364,15 @@ static int io_msg_fd_remote(struct io_kiocb *req)
 	return IOU_ISSUE_SKIP_COMPLETE;
 }
 
+/*
+ * io_msg_send_fd - send the file descriptor
+ * @req: the request to send
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to send the file descriptor. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int io_msg_send_fd(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_ring_ctx *target_ctx = req->file->private_data;
@@ -277,6 +396,15 @@ static int io_msg_send_fd(struct io_kiocb *req, unsigned int issue_flags)
 	return io_msg_install_complete(req, issue_flags);
 }
 
+/*
+ * __io_msg_ring_prep - prepare the msg ring
+ * @msg: the msg to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
+*/
 static int __io_msg_ring_prep(struct io_msg *msg, const struct io_uring_sqe *sqe)
 {
 	if (unlikely(sqe->buf_index || sqe->personality))
@@ -295,11 +423,27 @@ static int __io_msg_ring_prep(struct io_msg *msg, const struct io_uring_sqe *sqe
 	return 0;
 }
 
+/*
+ * io_msg_ring_prep - prepare the msg ring
+ * @req: the request to prepare
+ * @sqe: the submission queue entry
+ *
+ * This is used to prepare the msg ring. We need to ensure that we
+ * don't leak the file reference.
+ */
 int io_msg_ring_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return __io_msg_ring_prep(io_kiocb_to_cmd(req, struct io_msg), sqe);
 }
 
+/*
+ * io_msg_ring - post the msg to the target ctx
+ * @req: the request to post
+ * @issue_flags: flags from the submitter
+ *
+ * This is used to post the msg to the target ctx. We need to ensure that we
+ * don't leak the file reference.
+*/
 int io_msg_ring(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_msg *msg = io_kiocb_to_cmd(req, struct io_msg);
@@ -331,6 +475,13 @@ done:
 	return IOU_OK;
 }
 
+/*
+ * io_uring_sync_msg_ring - sync the msg ring
+ * @sqe: the submission queue entry
+ *
+ * This is used to sync the msg ring. We need to ensure that we
+ * don't leak the file reference.
+*/
 int io_uring_sync_msg_ring(struct io_uring_sqe *sqe)
 {
 	struct io_msg io_msg = { };
