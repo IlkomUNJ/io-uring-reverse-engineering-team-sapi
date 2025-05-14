@@ -33,7 +33,7 @@ Structure name | Defined in | Attributes | Caller Functions Source | source call
 | |  |  | io_poll_cancel | io_uring/poll.c | function parameter
 | |  |  | io_poll_cancel | io_uring/poll.h | function parameter
 | |  |  | io_poll_remove | io_uring/poll.c | local variable
-| |  |  | if | io_uring/timeout.c | local variable
+| |  |  | io_timeout_extract | io_uring/timeout.c | local variable
 | |  |  | io_timeout_cancel | io_uring/timeout.h | function parameter
 | |  |  | io_waitid_cancel | io_uring/waitid.c | function parameter
 | |  |  | io_waitid_cancel | io_uring/waitid.h | function parameter
@@ -159,7 +159,7 @@ Structure name | Defined in | Attributes | Caller Functions Source | source call
 | |  |  | wq_list_del | io_uring/slist.h | local variable
 | |  |  | io_uring_clean_tctx | io_uring/tctx.c | local variable
 |io_cb_cancel_data | io_uring/io-wq.c | bool, int, void, work_cancel_fn | io_acct_cancel_pending_work | io_uring/io-wq.c | function parameter
-| |  |  | if | io_uring/io-wq.c | local variable
+| |  |  | create_worker_cont | io_uring/io-wq.c | local variable
 | |  |  | io_wq_enqueue | io_uring/io-wq.c | local variable
 | |  |  | __io_wq_worker_cancel | io_uring/io-wq.c | function parameter
 | |  |  | io_wq_worker_cancel | io_uring/io-wq.c | local variable
@@ -178,7 +178,7 @@ Structure name | Defined in | Attributes | Caller Functions Source | source call
 | |  |  | io_cqring_wait_schedule | io_uring/io_uring.c | function parameter
 | |  |  | io_cqring_wait | io_uring/io_uring.c | function parameter
 | |  |  | io_get_ext_arg | io_uring/io_uring.c | function parameter
-| |  |  | if | io_uring/io_uring.c | local variable
+| |  |  | SYSCALL_DEFINE6 | io_uring/io_uring.c | local variable
 |io_tctx_exit | io_uring/io_uring.c | callback_head, completion, io_ring_ctx | io_tctx_exit_cb | io_uring/io_uring.c | local variable
 | |  |  | io_ring_exit_work | io_uring/io_uring.c | local variable
 |io_task_cancel | io_uring/io_uring.c | bool, io_uring_task | io_cancel_task_cb | io_uring/io_uring.c | local variable
