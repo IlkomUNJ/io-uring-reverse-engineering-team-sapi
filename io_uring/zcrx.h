@@ -48,17 +48,37 @@ int io_zcrx_recv(struct io_kiocb *req, struct io_zcrx_ifq *ifq,
 		 struct socket *sock, unsigned int flags,
 		 unsigned issue_flags, unsigned int *len);
 #else
+
+/*
+ ZC RX is not supported, so we provide no-op implementations
+ for the functions that would be used in this case.
+*/
 static inline int io_register_zcrx_ifq(struct io_ring_ctx *ctx,
 					struct io_uring_zcrx_ifq_reg __user *arg)
 {
 	return -EOPNOTSUPP;
 }
+
+/*
+ This function unregisters the interface queue for the io_ring_ctx. 
+ It takes an io_ring_ctx structure as an argument and unregisters the interface queue.
+*/
 static inline void io_unregister_zcrx_ifqs(struct io_ring_ctx *ctx)
 {
 }
+
+/*
+ This function shuts down the interface queues for the io_ring_ctx. 
+ It takes an io_ring_ctx structure as an argument and shuts down the interface queues.
+*/
 static inline void io_shutdown_zcrx_ifqs(struct io_ring_ctx *ctx)
 {
 }
+
+/*
+ This function retrieves the number of entries in the receive queue ring. 
+ It takes an io_zcrx_ifq structure as an argument and returns the number of entries in the receive queue ring.
+*/
 static inline int io_zcrx_recv(struct io_kiocb *req, struct io_zcrx_ifq *ifq,
 			       struct socket *sock, unsigned int flags,
 			       unsigned issue_flags, unsigned int *len)

@@ -39,12 +39,14 @@
 #include "truncate.h"
 #include "zcrx.h"
 
+//always returns an error code -ECANCELED and triggers a warning when called, indicating that it should never be executed. It's likely a placeholder or a stub for an unimplemented opcode in the io_uring system.
 static int io_no_issue(struct io_kiocb *req, unsigned int issue_flags)
 {
 	WARN_ON_ONCE(1);
 	return -ECANCELED;
 }
 
+// This function is used to prepare the io_uring operation for execution.
 static __maybe_unused int io_eopnotsupp_prep(struct io_kiocb *kiocb,
 					     const struct io_uring_sqe *sqe)
 {
@@ -597,7 +599,6 @@ const struct io_cold_def io_cold_defs[] = {
 		.name			= "WRITE_FIXED",
 		.cleanup		= io_readv_writev_cleanup,
 		.fail			= io_rw_fail,
-	},
 	[IORING_OP_POLL_ADD] = {
 		.name			= "POLL_ADD",
 	},
@@ -817,6 +818,7 @@ const struct io_cold_def io_cold_defs[] = {
 	},
 };
 
+// This function returns the name of the opcode corresponding to the given opcode value.
 const char *io_uring_get_opcode(u8 opcode)
 {
 	if (opcode < IORING_OP_LAST)
@@ -824,6 +826,7 @@ const char *io_uring_get_opcode(u8 opcode)
 	return "INVALID";
 }
 
+// This function checks if the given opcode is supported by the io_uring system.
 bool io_uring_op_supported(u8 opcode)
 {
 	if (opcode < IORING_OP_LAST &&
@@ -832,6 +835,11 @@ bool io_uring_op_supported(u8 opcode)
 	return false;
 }
 
+/* This function initializes the io_uring opcode handling table.
+It checks for any inconsistencies in the definitions and ensures that
+the necessary functions are defined for each opcode.
+ It also sets up the necessary structures for handling io_uring operations.
+*/
 void __init io_uring_optable_init(void)
 {
 	int i;

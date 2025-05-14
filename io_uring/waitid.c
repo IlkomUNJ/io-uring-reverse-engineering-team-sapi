@@ -32,6 +32,10 @@ struct io_waitid {
 	struct waitid_info info;
 };
 
+/*
+ The waitid_async structure is used to store the waitid information
+ and the request that is being processed.
+*/
 static void io_waitid_free(struct io_kiocb *req)
 {
 	struct io_waitid_async *iwa = req->async_data;
@@ -42,6 +46,10 @@ static void io_waitid_free(struct io_kiocb *req)
 	req->flags &= ~REQ_F_ASYNC_DATA;
 }
 
+/*
+ The io_waitid_copy_si function is used to copy the siginfo structure
+ from the kernel space to the user space.
+*/
 static bool io_waitid_compat_copy_si(struct io_waitid *iw, int signo)
 {
 	struct compat_siginfo __user *infop;
@@ -67,6 +75,10 @@ Efault:
 	goto done;
 }
 
+/*
+ The io_waitid_copy_si function is used to copy the siginfo structure
+ from the kernel space to the user space.
+*/
 static bool io_waitid_copy_si(struct io_kiocb *req, int signo)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -96,6 +108,10 @@ Efault:
 	goto done;
 }
 
+/*
+ The io_waitid_finish function is used to finish the waitid request
+ and copy the siginfo structure to the user space.
+*/
 static int io_waitid_finish(struct io_kiocb *req, int ret)
 {
 	int signo = 0;
@@ -111,6 +127,10 @@ static int io_waitid_finish(struct io_kiocb *req, int ret)
 	return ret;
 }
 
+/*
+ The io_waitid_complete function is used to complete the waitid request
+ and free the resources associated with it.
+*/
 static void io_waitid_complete(struct io_kiocb *req, int ret)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -128,6 +148,10 @@ static void io_waitid_complete(struct io_kiocb *req, int ret)
 	io_req_set_res(req, ret, 0);
 }
 
+/*
+ This function cancels an asynchronous waitid operation. 
+ It marks the operation as canceled, removes it from a wait queue, and completes the request with an error code (-ECANCELED). The function returns true if the operation was successfully canceled, and false if it was already owned by another thread.
+*/
 static bool __io_waitid_cancel(struct io_kiocb *req)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -151,18 +175,31 @@ static bool __io_waitid_cancel(struct io_kiocb *req)
 	return true;
 }
 
+/*
+ This function, io_waitid_cancel, cancels an asynchronous waitid operation in the io_uring context (ctx). 
+ It uses the io_cancel_remove function to remove the operation from the waitid_list and calls __io_waitid_cancel to perform the actual cancellation.
+*/
 int io_waitid_cancel(struct io_ring_ctx *ctx, struct io_cancel_data *cd,
 		     unsigned int issue_flags)
 {
 	return io_cancel_remove(ctx, cd, issue_flags, &ctx->waitid_list, __io_waitid_cancel);
 }
 
+/*
+ This function, io_waitid_remove_all, removes all waitid operations associated with a specific task context (tctx) from the io_uring context (ctx). 
+ It uses the io_cancel_remove_all function to remove the operations and calls __io_waitid_cancel to perform the actual cancellation.
+*/
 bool io_waitid_remove_all(struct io_ring_ctx *ctx, struct io_uring_task *tctx,
 			  bool cancel_all)
 {
 	return io_cancel_remove_all(ctx, tctx, &ctx->waitid_list, cancel_all, __io_waitid_cancel);
 }
 
+/*
+ This function, io_waitid_drop_issue_ref, drops a reference to the waitid operation and checks if it should be completed. 
+ If the reference count reaches zero, it returns false, indicating that the operation should not be completed. 
+ Otherwise, it queues up a task work to complete the request.
+*/
 static inline bool io_waitid_drop_issue_ref(struct io_kiocb *req)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -181,6 +218,11 @@ static inline bool io_waitid_drop_issue_ref(struct io_kiocb *req)
 	return true;
 }
 
+/*
+ This function, io_waitid_cb, is a callback function that is called when the waitid operation is completed. 
+ It checks the result of the waitid operation and completes the request accordingly. 
+ If the operation was interrupted by a signal, it retries the operation.
+*/
 static void io_waitid_cb(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_waitid_async *iwa = req->async_data;
@@ -220,6 +262,10 @@ static void io_waitid_cb(struct io_kiocb *req, io_tw_token_t tw)
 	io_req_task_complete(req, tw);
 }
 
+/*
+ This function, io_waitid_wait, is a wait function that is called when a waitid operation is triggered. 
+ It checks if the task should be woken up and if so, it queues up a task work to complete the request.
+*/
 static int io_waitid_wait(struct wait_queue_entry *wait, unsigned mode,
 			  int sync, void *key)
 {
@@ -242,6 +288,10 @@ static int io_waitid_wait(struct wait_queue_entry *wait, unsigned mode,
 	return 1;
 }
 
+/*
+ This function, io_waitid_prep, prepares the waitid request by checking the parameters and allocating memory for the async data. 
+ It initializes the waitid structure with the provided parameters.
+*/
 int io_waitid_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -262,6 +312,11 @@ int io_waitid_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ This function, io_waitid, is the main function that handles the waitid request. 
+ It prepares the waitid operation, adds it to the wait queue, and waits for the operation to complete. 
+ If the operation is interrupted by a signal, it retries the operation.
+*/
 int io_waitid(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);

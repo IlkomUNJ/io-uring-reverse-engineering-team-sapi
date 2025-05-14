@@ -22,6 +22,10 @@ struct io_nop {
 #define NOP_FLAGS	(IORING_NOP_INJECT_RESULT | IORING_NOP_FIXED_FILE | \
 			 IORING_NOP_FIXED_BUFFER | IORING_NOP_FILE)
 
+/* The io_nop_prep function prepares a no-operation (NOP) request for the io_uring subsystem. 
+ * It validates the input parameters, sets the appropriate flags, and initializes the request structure. 
+ * This preparation is essential for ensuring that the NOP operation is correctly configured before execution.
+ */
 int io_nop_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_nop *nop = io_kiocb_to_cmd(req, struct io_nop);
@@ -43,6 +47,10 @@ int io_nop_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/* The io_nop function executes a no-operation (NOP) request in the io_uring subsystem. 
+ * It handles the file descriptor and buffer index if specified, and sets the result of the operation. 
+ * This function is essential for managing NOP requests within the asynchronous I/O framework.
+ */
 int io_nop(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_nop *nop = io_kiocb_to_cmd(req, struct io_nop);

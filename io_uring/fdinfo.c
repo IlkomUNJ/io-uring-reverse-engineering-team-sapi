@@ -16,6 +16,11 @@
 #include "rsrc.h"
 
 #ifdef CONFIG_PROC_FS
+/*
+The io_uring_show_cred function provides a detailed and structured view of a process's credentials, including user IDs, group IDs, group memberships, and effective capabilities. 
+By leveraging the seq_file interface, it ensures that this information is presented in a human-readable format, making it useful for debugging, monitoring, or auditing purposes in the io_uring subsystem. 
+The use of namespace-aware translations ensures that the output is meaningful in the context of user-space applications.
+*/
 static __cold int io_uring_show_cred(struct seq_file *m, unsigned int id,
 		const struct cred *cred)
 {
@@ -47,6 +52,11 @@ static __cold int io_uring_show_cred(struct seq_file *m, unsigned int id,
 }
 
 #ifdef CONFIG_NET_RX_BUSY_POLL
+/*
+The common_tracking_show_fdinfo function provides a detailed view of the NAPI tracking configuration for an io_uring instance. 
+By outputting information about the tracking strategy, busy poll duration, and busy poll preference, it helps users and developers understand how NAPI is being utilized in the context of asynchronous I/O operations. 
+The use of the seq_file interface ensures that the information is presented in a structured and human-readable format, making it useful for debugging, monitoring, and performance analysis.
+*/
 static __cold void common_tracking_show_fdinfo(struct io_ring_ctx *ctx,
 					       struct seq_file *m,
 					       const char *tracking_strategy)
@@ -60,6 +70,11 @@ static __cold void common_tracking_show_fdinfo(struct io_ring_ctx *ctx,
 		seq_puts(m, "napi_prefer_busy_poll:\tfalse\n");
 }
 
+/*
+The napi_show_fdinfo function provides a structured and human-readable view of the NAPI tracking mode for an io_uring instance. 
+By handling different tracking modes (inactive, dynamic, and static) and delegating detailed output to the common_tracking_show_fdinfo function, it ensures that users and developers can easily understand the NAPI configuration. 
+This information is useful for debugging, monitoring, and performance analysis in the context of asynchronous I/O operations. The use of the seq_file interface ensures that the output is well-organized and accessible.
+*/
 static __cold void napi_show_fdinfo(struct io_ring_ctx *ctx,
 				    struct seq_file *m)
 {

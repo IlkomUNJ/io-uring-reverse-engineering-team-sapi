@@ -26,6 +26,11 @@ struct io_epoll_wait {
 	struct epoll_event __user	*events;
 };
 
+/*
+The io_epoll_ctl_prep function ensures that the epoll_ctl operation is properly configured and validated before execution. 
+By handling input validation, field initialization, and event data processing, it provides a robust mechanism for preparing epoll_ctl operations within the io_uring subsystem. 
+This design helps maintain the integrity and correctness of asynchronous I/O operations involving epoll.
+*/
 int io_epoll_ctl_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_epoll *epoll = io_kiocb_to_cmd(req, struct io_epoll);
@@ -68,6 +73,11 @@ int io_epoll_ctl(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+The io_epoll_wait_prep function ensures that the epoll_wait operation is properly configured and validated before execution. 
+By handling input validation and field initialization, it provides a robust mechanism for preparing epoll_wait operations within the io_uring subsystem. 
+This design helps maintain the integrity and correctness of asynchronous I/O operations involving epoll.
+*/
 int io_epoll_wait_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_epoll_wait *iew = io_kiocb_to_cmd(req, struct io_epoll_wait);
@@ -80,6 +90,10 @@ int io_epoll_wait_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_epoll_wait function provides a robust mechanism for integrating epoll_wait operations into the io_uring subsystem. 
+By invoking the kernel's epoll mechanism and handling the results appropriately, it ensures efficient and reliable processing of asynchronous I/O operations involving epoll.
+*/
 int io_epoll_wait(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_epoll_wait *iew = io_kiocb_to_cmd(req, struct io_epoll_wait);

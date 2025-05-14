@@ -123,6 +123,11 @@ bool io_match_task_safe(struct io_kiocb *head, struct io_uring_task *tctx,
 
 void io_activate_pollwq(struct io_ring_ctx *ctx);
 
+/*
+io_lockdep_assert_cq_locked: Ensures that the appropriate locks are held before accessing the completion queue (CQ). Depending on the context flags (IORING_SETUP_DEFER_TASKRUN, IORING_SETUP_IOPOLL), it asserts that either the uring_lock or completion_lock is held. If the submitter_task is active, it verifies that the current task matches the submitter.
+
+Purpose: Prevents race conditions and ensures proper synchronization when interacting with the CQ.
+*/
 static inline void io_lockdep_assert_cq_locked(struct io_ring_ctx *ctx)
 {
 #if defined(CONFIG_PROVE_LOCKING)
@@ -148,16 +153,29 @@ static inline void io_lockdep_assert_cq_locked(struct io_ring_ctx *ctx)
 #endif
 }
 
+/*
+io_is_compat: Checks if the io_uring context is running in compatibility mode.
+
+Purpose: Handles compatibility scenarios for 32-bit user space on 64-bit kernels.
+*/
 static inline bool io_is_compat(struct io_ring_ctx *ctx)
 {
 	return IS_ENABLED(CONFIG_COMPAT) && unlikely(ctx->compat);
 }
 
+/*
+io_req_task_work_add: Adds a request (io_kiocb) to the task work queue for deferred execution.
+
+Purpose: Enables asynchronous processing of requests.
+*/
 static inline void io_req_task_work_add(struct io_kiocb *req)
 {
 	__io_req_task_work_add(req, 0);
 }
 
+/*
+
+*/
 static inline void io_submit_flush_completions(struct io_ring_ctx *ctx)
 {
 	if (!wq_list_empty(&ctx->submit_state.compl_reqs) ||
@@ -168,6 +186,11 @@ static inline void io_submit_flush_completions(struct io_ring_ctx *ctx)
 #define io_for_each_link(pos, head) \
 	for (pos = (head); pos; pos = pos->link)
 
+/*
+io_get_cqe_overflow and io_get_cqe: Retrieve a CQE from the completion queue. If the CQE cache is empty, it attempts to refill it. The overflow parameter in io_get_cqe_overflow determines whether to handle overflow scenarios.
+
+Purpose: Manages CQE retrieval, ensuring that the queue is not overrun.
+*/
 static inline bool io_get_cqe_overflow(struct io_ring_ctx *ctx,
 					struct io_uring_cqe **ret,
 					bool overflow)
@@ -191,6 +214,11 @@ static inline bool io_get_cqe(struct io_ring_ctx *ctx, struct io_uring_cqe **ret
 	return io_get_cqe_overflow(ctx, ret, false);
 }
 
+/*
+io_defer_get_uncommited_cqe: Retrieves a CQE for deferred completions and increments the cq_extra counter.
+
+Purpose: Supports deferred CQE handling for specific scenarios.
+*/
 static inline bool io_defer_get_uncommited_cqe(struct io_ring_ctx *ctx,
 					       struct io_uring_cqe **cqe_ret)
 {
@@ -201,6 +229,11 @@ static inline bool io_defer_get_uncommited_cqe(struct io_ring_ctx *ctx,
 	return io_get_cqe(ctx, cqe_ret);
 }
 
+/*
+io_fill_cqe_req: Fills a CQE with data from a request (io_kiocb). If the IORING_SETUP_CQE32 flag is set, it also handles extended CQE data.
+
+Purpose: Populates CQEs with request completion details.
+*/
 static __always_inline bool io_fill_cqe_req(struct io_ring_ctx *ctx,
 					    struct io_kiocb *req)
 {
@@ -226,6 +259,11 @@ static __always_inline bool io_fill_cqe_req(struct io_ring_ctx *ctx,
 	return true;
 }
 
+/*
+req_set_fail: Marks a request as failed by setting the REQ_F_FAIL flag. If the request is configured to skip CQEs (REQ_F_CQE_SKIP), it adjusts the flags accordingly.
+
+Purpose: Handles error propagation for failed requests.
+*/
 static inline void req_set_fail(struct io_kiocb *req)
 {
 	req->flags |= REQ_F_FAIL;
@@ -235,12 +273,22 @@ static inline void req_set_fail(struct io_kiocb *req)
 	}
 }
 
+/*
+io_req_set_res: Sets the result (res) and flags (cflags) for a request's CQE.
+
+Purpose: Updates the completion status of a request.
+*/
 static inline void io_req_set_res(struct io_kiocb *req, s32 res, u32 cflags)
 {
 	req->cqe.res = res;
 	req->cqe.flags = cflags;
 }
 
+/*
+io_uring_alloc_async_data: Allocates memory for asynchronous request data. It uses a cache if available or falls back to dynamic allocation.
+
+Purpose: Optimizes memory allocation for asynchronous operations.
+*/
 static inline void *io_uring_alloc_async_data(struct io_alloc_cache *cache,
 					      struct io_kiocb *req)
 {
@@ -257,17 +305,32 @@ static inline void *io_uring_alloc_async_data(struct io_alloc_cache *cache,
 	return req->async_data;
 }
 
+/*
+req_has_async_data: Checks if a request has associated asynchronous data.
+
+Purpose: Simplifies checks for requests requiring additional resources.
+*/
 static inline bool req_has_async_data(struct io_kiocb *req)
 {
 	return req->flags & REQ_F_ASYNC_DATA;
 }
 
+/*
+io_put_file: Releases a file reference associated with a request unless it is a fixed file.
+
+Purpose: Ensures proper cleanup of file resources.
+*/
 static inline void io_put_file(struct io_kiocb *req)
 {
 	if (!(req->flags & REQ_F_FIXED_FILE) && req->file)
 		fput(req->file);
 }
 
+/*
+io_ring_submit_lock and io_ring_submit_unlock: Manage the uring_lock for submission operations. These functions ensure that the lock is acquired or released only when necessary, particularly for asynchronous worker threads.
+
+Purpose: Provides fine-grained control over locking during submission operations.
+*/
 static inline void io_ring_submit_unlock(struct io_ring_ctx *ctx,
 					 unsigned issue_flags)
 {
@@ -290,12 +353,21 @@ static inline void io_ring_submit_lock(struct io_ring_ctx *ctx,
 	lockdep_assert_held(&ctx->uring_lock);
 }
 
+/*
+io_commit_cqring: Updates the CQ tail pointer to reflect newly added CQEs.
+
+Purpose: Ensures that CQ updates are visible to user space in a consistent manner.
+*/
 static inline void io_commit_cqring(struct io_ring_ctx *ctx)
 {
 	/* order cqe stores with ring update */
 	smp_store_release(&ctx->rings->cq.tail, ctx->cached_cq_tail);
 }
 
+/*
+io_poll_wq_wake: Wakes up tasks waiting on the poll wait queue (poll_wq).
+Purpose: Notifies tasks of poll-related events.
+*/
 static inline void io_poll_wq_wake(struct io_ring_ctx *ctx)
 {
 	if (wq_has_sleeper(&ctx->poll_wq))
@@ -303,6 +375,11 @@ static inline void io_poll_wq_wake(struct io_ring_ctx *ctx)
 				poll_to_key(EPOLL_URING_WAKE | EPOLLIN));
 }
 
+/*
+io_cqring_wake: Wakes up tasks waiting on the CQ wait queue. It uses a poll wakeup key to handle dependencies between eventfd or epoll and multishot poll.
+
+Purpose: Notifies waiting tasks of new CQEs.
+*/
 static inline void io_cqring_wake(struct io_ring_ctx *ctx)
 {
 	/*
@@ -320,6 +397,11 @@ static inline void io_cqring_wake(struct io_ring_ctx *ctx)
 				poll_to_key(EPOLL_URING_WAKE | EPOLLIN));
 }
 
+/*
+io_sqring_full: Checks if the submission queue (SQ) is full by comparing the head and tail pointers.
+
+Purpose: Prevents overflows in the SQ.
+*/
 static inline bool io_sqring_full(struct io_ring_ctx *ctx)
 {
 	struct io_rings *r = ctx->rings;
@@ -334,6 +416,11 @@ static inline bool io_sqring_full(struct io_ring_ctx *ctx)
 	return READ_ONCE(r->sq.tail) - READ_ONCE(r->sq.head) == ctx->sq_entries;
 }
 
+/*
+io_sqring_entries: Calculates the number of available entries in the SQ.
+
+Purpose: Provides a count of pending submissions.
+*/
 static inline unsigned int io_sqring_entries(struct io_ring_ctx *ctx)
 {
 	struct io_rings *rings = ctx->rings;
@@ -344,6 +431,10 @@ static inline unsigned int io_sqring_entries(struct io_ring_ctx *ctx)
 	return min(entries, ctx->sq_entries);
 }
 
+/*
+io_run_task_work: Executes pending task work for the current thread. It handles task work notifications, processes io_uring task work, and runs any remaining task work.
+Purpose: Ensures that all pending work for the current thread is processed efficiently.
+*/
 static inline int io_run_task_work(void)
 {
 	bool ret = false;
@@ -382,16 +473,31 @@ static inline int io_run_task_work(void)
 	return ret;
 }
 
+/*
+io_local_work_pending: Checks if there is any pending local work in the work_llist or retry_llist linked lists of the io_ring_ctx.
+
+Purpose: Determines whether there are tasks queued locally for processing.
+*/
 static inline bool io_local_work_pending(struct io_ring_ctx *ctx)
 {
 	return !llist_empty(&ctx->work_llist) || !llist_empty(&ctx->retry_llist);
 }
 
+/*
+io_task_work_pending: Checks if there is any pending task work for the current thread or local work in the io_ring_ctx.
+
+Purpose: Combines task work and local work checks to decide if further processing is required.
+*/
 static inline bool io_task_work_pending(struct io_ring_ctx *ctx)
 {
 	return task_work_pending(current) || io_local_work_pending(ctx);
 }
 
+/*
+io_tw_lock: Asserts that the uring_lock is held when performing certain operations.
+
+Purpose: Ensures proper synchronization when accessing shared resources.
+*/
 static inline void io_tw_lock(struct io_ring_ctx *ctx, io_tw_token_t tw)
 {
 	lockdep_assert_held(&ctx->uring_lock);
@@ -401,6 +507,11 @@ static inline void io_tw_lock(struct io_ring_ctx *ctx, io_tw_token_t tw)
  * Don't complete immediately but use deferred completion infrastructure.
  * Protected by ->uring_lock and can only be used either with
  * IO_URING_F_COMPLETE_DEFER or inside a tw handler holding the mutex.
+ */
+ /*
+ io_req_complete_defer: Adds a request to the deferred completion infrastructure by appending it to the compl_reqs list in the submit_state.
+
+Purpose: Supports deferred completions, which are useful for handling requests that cannot be completed immediately.
  */
 static inline void io_req_complete_defer(struct io_kiocb *req)
 	__must_hold(&req->ctx->uring_lock)
@@ -412,6 +523,11 @@ static inline void io_req_complete_defer(struct io_kiocb *req)
 	wq_list_add_tail(&req->comp_list, &state->compl_reqs);
 }
 
+/*
+io_commit_cqring_flush: Flushes the completion queue ring if certain conditions are met, such as active timeouts, drains, or event file descriptors.
+
+Purpose: Ensures that CQ updates are properly flushed to user space.
+*/
 static inline void io_commit_cqring_flush(struct io_ring_ctx *ctx)
 {
 	if (unlikely(ctx->off_timeout_used || ctx->drain_active ||
@@ -419,6 +535,10 @@ static inline void io_commit_cqring_flush(struct io_ring_ctx *ctx)
 		__io_commit_cqring_flush(ctx);
 }
 
+/*
+io_get_task_refs: Decrements the cached task references for the current io_uring_task. If the count drops below zero, it refills the references.
+Purpose: Manages task references efficiently, ensuring that tasks have sufficient references for their operations.
+*/
 static inline void io_get_task_refs(int nr)
 {
 	struct io_uring_task *tctx = current->io_uring;
@@ -428,6 +548,11 @@ static inline void io_get_task_refs(int nr)
 		io_task_refs_refill(tctx);
 }
 
+/*
+io_req_cache_empty: Checks if the request cache is empty by verifying the free_list in the submit_state.
+
+Purpose: Determines if new requests need to be allocated.
+*/
 static inline bool io_req_cache_empty(struct io_ring_ctx *ctx)
 {
 	return !ctx->submit_state.free_list.next;
@@ -435,6 +560,11 @@ static inline bool io_req_cache_empty(struct io_ring_ctx *ctx)
 
 extern struct kmem_cache *req_cachep;
 
+/*
+io_extract_req: Extracts a request from the free_list in the submit_state.
+
+Purpose: Retrieves a pre-allocated request for reuse.
+*/
 static inline struct io_kiocb *io_extract_req(struct io_ring_ctx *ctx)
 {
 	struct io_kiocb *req;
@@ -444,6 +574,11 @@ static inline struct io_kiocb *io_extract_req(struct io_ring_ctx *ctx)
 	return req;
 }
 
+/*
+io_alloc_req: Allocates a request by either extracting it from the cache or refilling the cache if it is empty.
+
+Purpose: Ensures efficient allocation of requests, minimizing dynamic memory allocation overhead.
+*/
 static inline bool io_alloc_req(struct io_ring_ctx *ctx, struct io_kiocb **req)
 {
 	if (unlikely(io_req_cache_empty(ctx))) {
@@ -454,11 +589,21 @@ static inline bool io_alloc_req(struct io_ring_ctx *ctx, struct io_kiocb **req)
 	return true;
 }
 
+/*
+io_allowed_defer_tw_run: Checks if the current task is allowed to run deferred task work. This is true if the submitter_task matches the current task.
+
+Purpose: Ensures that only the designated task can execute deferred work.
+*/
 static inline bool io_allowed_defer_tw_run(struct io_ring_ctx *ctx)
 {
 	return likely(ctx->submitter_task == current);
 }
 
+/*
+io_allowed_run_tw: Checks if the current task is allowed to run task work. This is true if the IORING_SETUP_DEFER_TASKRUN flag is not set or if the submitter_task matches the current task.
+
+Purpose: Enforces task-specific execution permissions for task work.
+*/
 static inline bool io_allowed_run_tw(struct io_ring_ctx *ctx)
 {
 	return likely(!(ctx->flags & IORING_SETUP_DEFER_TASKRUN) ||
@@ -473,11 +618,21 @@ static inline bool io_allowed_run_tw(struct io_ring_ctx *ctx)
  * 2) PF_KTHREAD is set, in which case the invoker of the task_work is
  *    our fallback task_work.
  */
+ /*
+ io_should_terminate_tw: Determines if task work should be terminated. This happens if the current task is exiting (PF_EXITING) or if it is a kernel thread (PF_KTHREAD).
+
+Purpose: Ensures that task work is not executed in invalid or terminating contexts.
+ */
 static inline bool io_should_terminate_tw(void)
 {
 	return current->flags & (PF_KTHREAD | PF_EXITING);
 }
 
+/*
+io_req_queue_tw_complete: Completes a request by setting its result and adding it to the task work queue for deferred execution.
+
+Purpose: Handles the finalization of requests in a deferred manner.
+*/
 static inline void io_req_queue_tw_complete(struct io_kiocb *req, s32 res)
 {
 	io_req_set_res(req, res, 0);
@@ -489,6 +644,10 @@ static inline void io_req_queue_tw_complete(struct io_kiocb *req, s32 res)
  * IORING_SETUP_SQE128 contexts allocate twice the normal SQE size for each
  * slot.
  */
+ /*
+ uring_sqe_size: Returns the size of a submission queue entry (SQE). If the IORING_SETUP_SQE128 flag is set, it doubles the size.
+Purpose: Supports extended SQE formats for advanced use cases.
+ */
 static inline size_t uring_sqe_size(struct io_ring_ctx *ctx)
 {
 	if (ctx->flags & IORING_SETUP_SQE128)
@@ -496,6 +655,11 @@ static inline size_t uring_sqe_size(struct io_ring_ctx *ctx)
 	return sizeof(struct io_uring_sqe);
 }
 
+/*
+io_file_can_poll: Determines if a file associated with a request can be polled. If so, it sets the REQ_F_CAN_POLL flag.
+
+Purpose: Optimizes polling operations by identifying pollable files.
+*/
 static inline bool io_file_can_poll(struct io_kiocb *req)
 {
 	if (req->flags & REQ_F_CAN_POLL)
@@ -507,6 +671,11 @@ static inline bool io_file_can_poll(struct io_kiocb *req)
 	return false;
 }
 
+/*
+io_get_time: Retrieves the current time based on the clockid in the io_ring_ctx. If the clock is CLOCK_MONOTONIC, it uses ktime_get; otherwise, it applies an offset.
+
+Purpose: Provides accurate timing information for time-sensitive operations.
+*/
 static inline ktime_t io_get_time(struct io_ring_ctx *ctx)
 {
 	if (ctx->clockid == CLOCK_MONOTONIC)
@@ -520,6 +689,11 @@ enum {
 	IO_CHECK_CQ_DROPPED_BIT,
 };
 
+/*
+io_has_work: Checks if there is any pending work in the io_ring_ctx, either due to CQ overflow or local work.
+
+Purpose: Determines if the io_ring_ctx has work that needs to be processed.
+*/
 static inline bool io_has_work(struct io_ring_ctx *ctx)
 {
 	return test_bit(IO_CHECK_CQ_OVERFLOW_BIT, &ctx->check_cq) ||

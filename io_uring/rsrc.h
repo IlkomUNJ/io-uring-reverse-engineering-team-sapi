@@ -88,6 +88,10 @@ int io_buffer_validate(struct iovec *iov);
 bool io_check_coalesce_buffer(struct page **page_array, int nr_pages,
 			      struct io_imu_folio_data *data);
 
+/*
+ This function io_rsrc_node_lookup looks up a resource node in an array of nodes based on a given index. 
+ It returns the node at the specified index if it exists, otherwise it returns NULL. The array_index_nospec function is used to prevent speculative execution attacks.
+*/
 static inline struct io_rsrc_node *io_rsrc_node_lookup(struct io_rsrc_data *data,
 						       int index)
 {
@@ -96,6 +100,10 @@ static inline struct io_rsrc_node *io_rsrc_node_lookup(struct io_rsrc_data *data
 	return NULL;
 }
 
+/*
+ This function io_get_rsrc_node increments the reference count of a resource node and returns it. 
+ It is used to ensure that the node is not freed while it is still in use.
+*/
 static inline void io_put_rsrc_node(struct io_ring_ctx *ctx, struct io_rsrc_node *node)
 {
 	lockdep_assert_held(&ctx->uring_lock);
@@ -103,6 +111,11 @@ static inline void io_put_rsrc_node(struct io_ring_ctx *ctx, struct io_rsrc_node
 		io_free_rsrc_node(ctx, node);
 }
 
+/*
+ This function io_reset_rsrc_node resets a resource node in an array of nodes at a specified index. 
+ It decrements the reference count of the node and sets the node at the index to NULL. 
+ It returns true if the node was reset, otherwise it returns false.
+*/
 static inline bool io_reset_rsrc_node(struct io_ring_ctx *ctx,
 				      struct io_rsrc_data *data, int index)
 {
@@ -115,6 +128,10 @@ static inline bool io_reset_rsrc_node(struct io_ring_ctx *ctx,
 	return true;
 }
 
+/*
+ This function io_req_put_rsrc_nodes decrements the reference count of the resource nodes associated with a request. 
+ It is used to clean up the nodes when they are no longer
+*/
 static inline void io_req_put_rsrc_nodes(struct io_kiocb *req)
 {
 	if (req->file_node) {
@@ -127,6 +144,10 @@ static inline void io_req_put_rsrc_nodes(struct io_kiocb *req)
 	}
 }
 
+/*
+ This function io_req_assign_rsrc_node assigns a resource node to a request. 
+ It increments the reference count of the node and sets it in the request.
+*/
 static inline void io_req_assign_rsrc_node(struct io_rsrc_node **dst_node,
 					   struct io_rsrc_node *node)
 {
@@ -134,6 +155,10 @@ static inline void io_req_assign_rsrc_node(struct io_rsrc_node **dst_node,
 	*dst_node = node;
 }
 
+/*
+ This function io_req_assign_buf_node assigns a buffer node to a request. 
+ It sets the buffer node in the request and marks the request as having a buffer node.
+*/
 static inline void io_req_assign_buf_node(struct io_kiocb *req,
 					  struct io_rsrc_node *node)
 {
@@ -146,6 +171,10 @@ int io_files_update_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe);
 
 int __io_account_mem(struct user_struct *user, unsigned long nr_pages);
 
+/*
+ This function __io_unaccount_mem decrements the memory usage of a user by the specified number of pages. 
+ It is used to release memory that was previously accounted for.
+*/
 static inline void __io_unaccount_mem(struct user_struct *user,
 				      unsigned long nr_pages)
 {
@@ -155,6 +184,10 @@ static inline void __io_unaccount_mem(struct user_struct *user,
 void io_vec_free(struct iou_vec *iv);
 int io_vec_realloc(struct iou_vec *iv, unsigned nr_entries);
 
+/*
+ This function io_vec_reset_iovec resets the I/O vector in the iou_vec structure. 
+ It frees the existing I/O vector and assigns a new one to it.
+*/
 static inline void io_vec_reset_iovec(struct iou_vec *iv,
 				      struct iovec *iovec, unsigned nr)
 {
@@ -163,6 +196,10 @@ static inline void io_vec_reset_iovec(struct iou_vec *iv,
 	iv->nr = nr;
 }
 
+/*
+ This function io_vec_alloc_cache_vec_kasan allocates memory for an I/O vector and initializes it. 
+ It is used to create a new I/O vector for use with requests.
+*/
 static inline void io_alloc_cache_vec_kasan(struct iou_vec *iv)
 {
 	if (IS_ENABLED(CONFIG_KASAN))

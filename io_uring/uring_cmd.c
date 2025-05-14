@@ -16,6 +16,11 @@
 #include "rsrc.h"
 #include "uring_cmd.h"
 
+/*
+ The io_uring_cmd structure is used to represent a command in the
+ io_uring subsystem. It contains information about the command, such as
+ its opcode, flags, and data.
+*/
 void io_cmd_cache_free(const void *entry)
 {
 	struct io_async_cmd *ac = (struct io_async_cmd *)entry;
@@ -24,6 +29,10 @@ void io_cmd_cache_free(const void *entry)
 	kfree(ac);
 }
 
+/*
+ io_uring_cmd_prep() prepares the command for submission. It allocates
+ memory for the command and sets up the necessary fields.
+*/
 static void io_req_uring_cleanup(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -49,11 +58,19 @@ static void io_req_uring_cleanup(struct io_kiocb *req, unsigned int issue_flags)
 	}
 }
 
+/*
+ io_uring_cmd_cleanup() cleans up the command after it has been
+ submitted. It frees any resources associated with the command.
+*/
 void io_uring_cmd_cleanup(struct io_kiocb *req)
 {
 	io_req_uring_cleanup(req, 0);
 }
 
+/*
+ io_uring_try_cancel_uring_cmd() is called when the timeout is canceled.
+ It will cancel the timer and complete the request.
+*/
 bool io_uring_try_cancel_uring_cmd(struct io_ring_ctx *ctx,
 				   struct io_uring_task *tctx, bool cancel_all)
 {
@@ -82,6 +99,10 @@ bool io_uring_try_cancel_uring_cmd(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/*
+ Remove the command from the cancelable list. This is called when
+ the command is completed or canceled.
+*/
 static void io_uring_cmd_del_cancelable(struct io_uring_cmd *cmd,
 		unsigned int issue_flags)
 {
@@ -121,6 +142,10 @@ void io_uring_cmd_mark_cancelable(struct io_uring_cmd *cmd,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_mark_cancelable);
 
+/*
+ io_uring_cmd_work() is called when the command is completed. It
+ executes the task work callback and handles any necessary cleanup.
+*/
 static void io_uring_cmd_work(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -133,6 +158,11 @@ static void io_uring_cmd_work(struct io_kiocb *req, io_tw_token_t tw)
 	ioucmd->task_work_cb(ioucmd, flags);
 }
 
+/*
+ This is called from the task_work context, and we need to
+ make sure that we are not holding any locks that would
+ cause a deadlock.
+*/
 void __io_uring_cmd_do_in_task(struct io_uring_cmd *ioucmd,
 			void (*task_work_cb)(struct io_uring_cmd *, unsigned),
 			unsigned flags)
@@ -184,6 +214,10 @@ void io_uring_cmd_done(struct io_uring_cmd *ioucmd, ssize_t ret, u64 res2,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_done);
 
+/*
+ io_uring_cmd_prep_setup() prepares the command for submission. It
+ allocates memory for the command and sets up the necessary fields.
+*/
 static int io_uring_cmd_prep_setup(struct io_kiocb *req,
 				   const struct io_uring_sqe *sqe)
 {
@@ -210,6 +244,10 @@ static int io_uring_cmd_prep_setup(struct io_kiocb *req,
 	return 0;
 }
 
+/*
+ io_uring_cmd_prep() prepares the command for submission. It
+ allocates memory for the command and sets up the necessary fields.
+*/
 int io_uring_cmd_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -229,6 +267,10 @@ int io_uring_cmd_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return io_uring_cmd_prep_setup(req, sqe);
 }
 
+/*
+ This function, __io_disarm_linked_timeout, disarms a linked timeout by canceling its timer, removing it from the list, and updating the linked list. 
+ It returns the disarmed timeout request if successful, or NULL if the timer cannot be canceled.
+*/
 int io_uring_cmd(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -266,6 +308,11 @@ int io_uring_cmd(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ This function, io_uring_cmd_import_fixed, imports a fixed buffer
+ for the command. It takes the buffer address, length, and read/write
+ flags as input.
+*/
 int io_uring_cmd_import_fixed(u64 ubuf, unsigned long len, int rw,
 			      struct iov_iter *iter,
 			      struct io_uring_cmd *ioucmd,
@@ -296,6 +343,10 @@ int io_uring_cmd_import_fixed_vec(struct io_uring_cmd *ioucmd,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_import_fixed_vec);
 
+/*
+ This function, io_uring_cmd_issue_blocking, issues a blocking command
+ for the io_uring. It queues the request to the I/O work queue.
+*/
 void io_uring_cmd_issue_blocking(struct io_uring_cmd *ioucmd)
 {
 	struct io_kiocb *req = cmd_to_io_kiocb(ioucmd);
@@ -303,6 +354,10 @@ void io_uring_cmd_issue_blocking(struct io_uring_cmd *ioucmd)
 	io_req_queue_iowq(req);
 }
 
+/*
+ This function, io_uring_cmd_issue_iopoll, issues an I/O poll command
+ for the io_uring. It queues the request to the I/O work queue.
+*/
 static inline int io_uring_cmd_getsockopt(struct socket *sock,
 					  struct io_uring_cmd *cmd,
 					  unsigned int issue_flags)
@@ -330,6 +385,10 @@ static inline int io_uring_cmd_getsockopt(struct socket *sock,
 	return optlen;
 }
 
+/*
+ This function, io_uring_cmd_setsockopt, sets a socket option for the
+ io_uring. It takes a socket, command, and issue flags as input.
+*/
 static inline int io_uring_cmd_setsockopt(struct socket *sock,
 					  struct io_uring_cmd *cmd,
 					  unsigned int issue_flags)

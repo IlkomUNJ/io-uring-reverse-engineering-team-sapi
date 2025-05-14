@@ -32,6 +32,11 @@ int io_cancel_remove(struct io_ring_ctx *ctx, struct io_cancel_data *cd,
 		     unsigned int issue_flags, struct hlist_head *list,
 		     bool (*cancel)(struct io_kiocb *));
 
+/*
+The io_cancel_match_sequence function is a static inline utility function used in the io_uring subsystem to determine whether a specific I/O request (req) matches a given cancellation sequence (sequence). 
+It also updates the request's cancellation sequence if it has not been set yet. The function operates on an io_kiocb structure (req), which represents an individual I/O request, and takes an integer (sequence) as input. 
+It returns a boolean value indicating whether the request matches the provided sequence.
+*/			 
 static inline bool io_cancel_match_sequence(struct io_kiocb *req, int sequence)
 {
 	if (req->cancel_seq_set && sequence == req->work.cancel_seq)

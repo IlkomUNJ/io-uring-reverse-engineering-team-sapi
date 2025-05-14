@@ -47,6 +47,10 @@ struct io_link {
 	int				flags;
 };
 
+/*
+The io_renameat_prep function prepares a renameat operation by validating the input, extracting file descriptors and paths, and resolving user-space paths into kernel-space representations. It ensures that the operation is properly configured and marks the request for cleanup and asynchronous execution. 
+This robust preparation process is critical for maintaining the integrity and reliability of asynchronous I/O operations in the io_uring subsystem.
+*/
 int io_renameat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_rename *ren = io_kiocb_to_cmd(req, struct io_rename);
@@ -78,6 +82,10 @@ int io_renameat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_renameat function executes a renameat operation by invoking the kernel's do_renameat2 function. It ensures that the operation is performed synchronously and handles the result appropriately. 
+By clearing the cleanup flag and recording the result, the function maintains the integrity and reliability of the io_uring subsystem. This design ensures that file or directory renaming operations are seamlessly integrated into the asynchronous I/O framework provided by io_uring.
+*/
 int io_renameat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_rename *ren = io_kiocb_to_cmd(req, struct io_rename);
@@ -93,6 +101,10 @@ int io_renameat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+The io_renameat_cleanup function is a simple but essential part of the io_uring subsystem's resource management. By releasing the memory allocated for the old and new file paths, it ensures proper cleanup after a renameat operation. 
+This design helps maintain the reliability and efficiency of the io_uring framework, particularly in environments with high volumes of asynchronous I/O operations.
+*/
 void io_renameat_cleanup(struct io_kiocb *req)
 {
 	struct io_rename *ren = io_kiocb_to_cmd(req, struct io_rename);
@@ -101,6 +113,10 @@ void io_renameat_cleanup(struct io_kiocb *req)
 	putname(ren->newpath);
 }
 
+/*
+The io_unlinkat_prep function prepares an unlinkat operation by validating the input, extracting the directory file descriptor and filename, and resolving the user-space filename into a kernel-space representation. 
+It ensures that the operation is properly configured and marks the request for cleanup and asynchronous execution. This robust preparation process is critical for maintaining the integrity and reliability of asynchronous I/O operations in the io_uring subsystem.
+*/
 int io_unlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_unlink *un = io_kiocb_to_cmd(req, struct io_unlink);
@@ -127,6 +143,10 @@ int io_unlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_unlinkat function executes an unlinkat operation by invoking the kernel's do_unlinkat or do_rmdir function, depending on whether the operation involves a file or a directory. It ensures that the operation is performed synchronously and handles the result appropriately. 
+By clearing the cleanup flag and recording the result, the function maintains the integrity and reliability of the io_uring subsystem. This design ensures that file or directory removal operations are seamlessly integrated into the asynchronous I/O framework provided by io_uring.
+*/
 int io_unlinkat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_unlink *un = io_kiocb_to_cmd(req, struct io_unlink);
@@ -144,6 +164,10 @@ int io_unlinkat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+The io_unlinkat_cleanup function is a simple but essential part of the io_uring subsystem's resource management. By releasing the memory allocated for the filename, it ensures proper cleanup after an unlinkat operation. 
+This design helps maintain the reliability and efficiency of the io_uring framework, particularly in environments with high volumes of asynchronous I/O operations.
+*/
 void io_unlinkat_cleanup(struct io_kiocb *req)
 {
 	struct io_unlink *ul = io_kiocb_to_cmd(req, struct io_unlink);
@@ -151,6 +175,10 @@ void io_unlinkat_cleanup(struct io_kiocb *req)
 	putname(ul->filename);
 }
 
+/*
+The io_mkdirat_prep function prepares a mkdirat operation by validating the input, extracting the directory file descriptor, mode, and filename, and resolving the user-space filename into a kernel-space representation. 
+It ensures that the operation is properly configured and marks the request for cleanup and asynchronous execution. This robust preparation process is critical for maintaining the integrity and reliability of asynchronous I/O operations in the io_uring subsystem.
+*/
 int io_mkdirat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_mkdir *mkd = io_kiocb_to_cmd(req, struct io_mkdir);
@@ -174,6 +202,10 @@ int io_mkdirat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_mkdirat function executes a mkdirat operation by invoking the kernel's do_mkdirat function. It ensures that the operation is performed synchronously and handles the result appropriately. By clearing the cleanup flag and recording the result, the function maintains the integrity and reliability of the io_uring subsystem. 
+This design ensures that directory creation operations are seamlessly integrated into the asynchronous I/O framework provided by io_uring.
+*/
 int io_mkdirat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_mkdir *mkd = io_kiocb_to_cmd(req, struct io_mkdir);
@@ -188,6 +220,10 @@ int io_mkdirat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+The io_mkdirat_cleanup function is a simple but essential part of the io_uring subsystem's resource management. By releasing the memory allocated for the filename, it ensures proper cleanup after a mkdirat operation. 
+This design helps maintain the reliability and efficiency of the io_uring framework, particularly in environments with high volumes of asynchronous I/O operations.
+*/
 void io_mkdirat_cleanup(struct io_kiocb *req)
 {
 	struct io_mkdir *md = io_kiocb_to_cmd(req, struct io_mkdir);
@@ -195,6 +231,10 @@ void io_mkdirat_cleanup(struct io_kiocb *req)
 	putname(md->filename);
 }
 
+/*
+The io_symlinkat_prep function prepares a symlinkat operation by validating the input, extracting the directory file descriptor and paths, and resolving the user-space paths into kernel-space representations. It ensures that the operation is properly configured and marks the request for cleanup and asynchronous execution. 
+This robust preparation process is critical for maintaining the integrity and reliability of asynchronous I/O operations in the io_uring subsystem.
+*/
 int io_symlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_link *sl = io_kiocb_to_cmd(req, struct io_link);
@@ -224,6 +264,10 @@ int io_symlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_symlinkat function executes a symlinkat operation by invoking the kernel's do_symlinkat function. It ensures that the operation is performed synchronously and handles the result appropriately. By clearing the cleanup flag and recording the result, the function maintains the integrity and reliability of the io_uring subsystem. 
+This design ensures that symbolic link creation operations are seamlessly integrated into the asynchronous I/O framework provided by io_uring.
+*/
 int io_symlinkat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_link *sl = io_kiocb_to_cmd(req, struct io_link);
@@ -238,6 +282,10 @@ int io_symlinkat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+The io_linkat_prep function prepares a linkat operation by validating the input, extracting the directory file descriptors and paths, and resolving the user-space paths into kernel-space representations. It ensures that the operation is properly configured and marks the request for cleanup and asynchronous execution. 
+This robust preparation process is critical for maintaining the integrity and reliability of asynchronous I/O operations in the io_uring subsystem.
+*/
 int io_linkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_link *lnk = io_kiocb_to_cmd(req, struct io_link);
@@ -269,6 +317,10 @@ int io_linkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_linkat function executes a linkat operation by invoking the kernel's do_linkat function. It ensures that the operation is performed synchronously and handles the result appropriately. 
+By clearing the cleanup flag and recording the result, the function maintains the integrity and reliability of the io_uring subsystem. This design ensures that hard link creation operations are seamlessly integrated into the asynchronous I/O framework provided by io_uring.
+*/
 int io_linkat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_link *lnk = io_kiocb_to_cmd(req, struct io_link);
@@ -284,6 +336,10 @@ int io_linkat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+The io_link_cleanup function is a simple but essential part of the io_uring subsystem's resource management. By releasing the memory allocated for the old and new paths, it ensures proper cleanup after a linkat operation. 
+This design helps maintain the reliability and efficiency of the io_uring framework, preventing resource leaks and ensuring smooth operation in asynchronous I/O workflows.
+*/
 void io_link_cleanup(struct io_kiocb *req)
 {
 	struct io_link *sl = io_kiocb_to_cmd(req, struct io_link);

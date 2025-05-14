@@ -11,6 +11,15 @@
 
 static const struct ubuf_info_ops io_ubuf_ops;
 
+/*
+ * io_notif_tw_complete - complete all notifications in the list
+ * @notif: the notification kiocb
+ * @tw: the task_work token
+ *
+ * This function is called to complete all notifications in the list.
+ * It will iterate through the list and complete each notification with
+ * the provided task_work token.
+ */
 static void io_notif_tw_complete(struct io_kiocb *notif, io_tw_token_t tw)
 {
 	struct io_notif_data *nd = io_notif_to_data(notif);
@@ -33,6 +42,16 @@ static void io_notif_tw_complete(struct io_kiocb *notif, io_tw_token_t tw)
 	} while (nd);
 }
 
+/*
+ * io_tx_ubuf_complete - complete the ubuf_info for a notification
+ * @skb: the skb to complete
+ * @uarg: the ubuf_info to complete
+ * @success: whether the operation was successful
+ *
+ * This function is called to complete the ubuf_info for a notification.
+ * It will check if the operation was successful and update the ubuf_info
+ * accordingly.
+ */
 void io_tx_ubuf_complete(struct sk_buff *skb, struct ubuf_info *uarg,
 			 bool success)
 {
@@ -60,6 +79,14 @@ void io_tx_ubuf_complete(struct sk_buff *skb, struct ubuf_info *uarg,
 	__io_req_task_work_add(notif, tw_flags);
 }
 
+/*
+ * io_link_skb - link the skb to the ubuf_info
+ * @skb: the skb to link
+ * @uarg: the ubuf_info to link to
+ *
+ * This function is called to link the skb to the ubuf_info. It will check
+ * if the skb is already linked and if so, it will return an error.
+ */
 static int io_link_skb(struct sk_buff *skb, struct ubuf_info *uarg)
 {
 	struct io_notif_data *nd, *prev_nd;
@@ -99,11 +126,26 @@ static int io_link_skb(struct sk_buff *skb, struct ubuf_info *uarg)
 	return 0;
 }
 
+/*
+ * io_ubuf_ops - ubuf_info operations for io_uring
+ * @complete: complete the ubuf_info
+ * @link_skb: link the skb to the ubuf_info
+ *
+ * This structure defines the operations for the ubuf_info used in io_uring.
+ * It includes functions for completing the ubuf_info and linking the skb.
+ */
 static const struct ubuf_info_ops io_ubuf_ops = {
 	.complete = io_tx_ubuf_complete,
 	.link_skb = io_link_skb,
 };
 
+/*
+ * io_notif_to_data - convert a kiocb to a notif data
+ * @notif: the kiocb to convert
+ *
+ * This function converts a kiocb to a notif data. It will return the
+ * notif data associated with the kiocb.
+ */
 struct io_kiocb *io_alloc_notif(struct io_ring_ctx *ctx)
 	__must_hold(&ctx->uring_lock)
 {

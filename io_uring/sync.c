@@ -22,6 +22,12 @@ struct io_sync {
 	int				mode;
 };
 
+/* 
+ This is a bit of a hack, but we need to be able to pass the file
+ descriptor to the sync_file_range() syscall.  The file descriptor
+ is passed in the sqe->fd field, and we need to save it in the
+ io_sync structure.
+ */
 int io_sfr_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sync *sync = io_kiocb_to_cmd(req, struct io_sync);
@@ -37,6 +43,10 @@ int io_sfr_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ This function, io_sync_file_range, synchronizes a file range using the sync_file_range system call. It checks if the operation is being issued in a non-blocking context, and if so, triggers a warning. 
+ The function then calls sync_file_range with the file descriptor, offset, length, and flags from the io_sync structure, and sets the result of the operation in the io_kiocb request structure. The function returns IOU_OK to indicate successful completion.
+*/
 int io_sync_file_range(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sync *sync = io_kiocb_to_cmd(req, struct io_sync);
@@ -50,6 +60,11 @@ int io_sync_file_range(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ This function, io_fsync_prep, prepares the io_kiocb request for a file synchronization operation. 
+ It checks if the request contains any invalid fields and sets the flags, offset, and length for the synchronization operation. 
+ The function returns 0 on success or an error code on failure.
+*/
 int io_fsync_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sync *sync = io_kiocb_to_cmd(req, struct io_sync);
@@ -67,6 +82,12 @@ int io_fsync_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ This function, io_fsync, performs a file synchronization operation using the fsync system call. 
+ It checks if the operation is being issued in a non-blocking context and triggers a warning if so. 
+ The function then calls vfs_fsync_range with the file descriptor, offset, length, and flags from the io_sync structure, and sets the result of the operation in the io_kiocb request structure. 
+ The function returns IOU_OK to indicate successful completion.
+*/
 int io_fsync(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sync *sync = io_kiocb_to_cmd(req, struct io_sync);
@@ -82,6 +103,11 @@ int io_fsync(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ This function, io_fallocate_prep, prepares the io_kiocb request for a file allocation operation. 
+ It checks if the request contains any invalid fields and sets the offset, length, and mode for the allocation operation. 
+ The function returns 0 on success or an error code on failure.
+*/
 int io_fallocate_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_sync *sync = io_kiocb_to_cmd(req, struct io_sync);
@@ -96,6 +122,10 @@ int io_fallocate_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ This function, io_fallocate, handles file allocation requests in the io_uring library. 
+ It checks if the request is non-blocking, warns if so (since fallocate requires a blocking context), and then calls the vfs_fallocate function to perform the actual file allocation. If successful, it notifies the file system of the modification and sets the result of the operation in the request structure.
+*/
 int io_fallocate(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_sync *sync = io_kiocb_to_cmd(req, struct io_sync);

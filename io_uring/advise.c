@@ -28,6 +28,11 @@ struct io_madvise {
 	u32				advice;
 };
 
+/*
+The function io_madvise_prep is part of the Linux kernel's io_uring subsystem, which provides high-performance asynchronous I/O operations. 
+This function prepares a madvise operation, which is used to provide memory management advice to the kernel for a specific memory range. 
+The function takes two parameters: req, a pointer to an io_kiocb structure representing the I/O request, and sqe, a pointer to an io_uring_sqe structure, which contains the submission queue entry details for the operation.
+*/
 int io_madvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 #if defined(CONFIG_ADVISE_SYSCALLS) && defined(CONFIG_MMU)
@@ -48,6 +53,11 @@ int io_madvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 #endif
 }
 
+/*
+The io_madvise function is part of the Linux kernel's io_uring subsystem and is responsible for executing a madvise operation. 
+This operation provides memory management advice to the kernel for a specified memory range. 
+The function takes two parameters: req, a pointer to an io_kiocb structure representing the I/O request, and issue_flags, which contains flags that influence how the operation is issued.
+*/
 int io_madvise(struct io_kiocb *req, unsigned int issue_flags)
 {
 #if defined(CONFIG_ADVISE_SYSCALLS) && defined(CONFIG_MMU)
@@ -76,6 +86,11 @@ static bool io_fadvise_force_async(struct io_fadvise *fa)
 	}
 }
 
+/*
+The io_fadvise_prep function is part of the Linux kernel's io_uring subsystem and is responsible for preparing a fadvise operation. 
+This operation provides file access pattern advice to the kernel, helping optimize file I/O performance. 
+The function takes two parameters: req, a pointer to an io_kiocb structure representing the I/O request, and sqe, a pointer to an io_uring_sqe structure, which contains the submission queue entry details for the operation.
+*/
 int io_fadvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_fadvise *fa = io_kiocb_to_cmd(req, struct io_fadvise);
@@ -93,6 +108,11 @@ int io_fadvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+The io_fadvise function is part of the Linux kernel's io_uring subsystem and is responsible for executing a fadvise operation. 
+This operation provides file access pattern advice to the kernel, helping optimize file I/O performance for a specific file and range. 
+The function takes two parameters: req, a pointer to an io_kiocb structure representing the I/O request, and issue_flags, which contains flags that influence how the operation is issued.
+*/
 int io_fadvise(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_fadvise *fa = io_kiocb_to_cmd(req, struct io_fadvise);
