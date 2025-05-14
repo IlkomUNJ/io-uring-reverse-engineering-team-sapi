@@ -23,4 +23,3 @@ Score is mainly calculated from individual contributions made to the commit. The
 - [Task 1 Answer](/task%201/README.MD)
 - [Task 2 Answer](/task%202/README.MD)
 - [Task 3 Answer](/task%203/README.MD)
-- [Task 4 Answer](/task%204/README.MD)
