@@ -1,5 +1,194 @@
-| Structure name           | Defined in           | Attributes                                                                                                                                                        | Caller Functions Source          | source caller        | usage                              |
-| ------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------- | ---------------------------------- |
+Structure name | Defined in | Attributes | Caller Functions Source | source caller | usage
+---------------|------------|------------|-------------------------|---------------|-------------------
+|io_fadvise | io_uring/advise.c | file, u32, u64 | io_fadvise_force_async | io_uring/advise.c | function parameter
+| |  |  | io_fadvise_prep | io_uring/advise.c | local variable
+| |  |  | io_fadvise | io_uring/advise.c | local variable
+|io_madvise | io_uring/advise.c | file, u32, u64 | io_madvise_prep | io_uring/advise.c | local variable , function parameter
+| |  |  | io_madvise | io_uring/advise.c | local variable , function parameter
+|io_cancel | io_uring/cancel.c | file, s32, u32, u64, u8 | io_async_cancel_prep | io_uring/cancel.c | local variable , function parameter
+| |  |  | io_async_cancel | io_uring/cancel.c | local variable , function parameter
+|io_cancel_data | io_uring/cancel.h | io_ring_ctx, union {u64, file}, u8, u32, int | io_try_cancel | io_uring/cancel.h | function parameter
+| |  |  | io_cancel_req_match | io_uring/cancel.h | function parameter
+| |  |  | io_cancel_cb        | io_uring/cancel.c | local variable
+| |  |  | io_async_cancel_one | io_uring/cancel.c | function parameter
+| |  |  | io_try_cancel       | io_uring/cancel.c | function parameter
+| |  |  | io_async_cancel       | io_uring/cancel.c | function parameter
+| |  |  | __io_sync_cancel       | io_uring/cancel.c | function parameter
+| |  |  | io_sync_cancel       | io_uring/cancel.c | local variable
+| |  |  | io_cancel_remove       | io_uring/cancel.c | function parameter
+| |  |  | io_futex_cancel | io_uring/futex.c | function parameter
+| |  |  | io_futex_cancel | io_uring/futex.h | function parameter
+| |  |  | __io_poll_cancel | io_uring/poll.c | function parameter
+| |  |  | io_poll_cancel | io_uring/poll.c | function parameter
+| |  |  | io_poll_cancel | io_uring/poll.h | function parameter
+| |  |  | io_poll_remove | io_uring/poll.c | local variable
+| |  |  | if | io_uring/timeout.c | local variable
+| |  |  | io_timeout_cancel | io_uring/timeout.h | function parameter
+| |  |  | io_waitid_cancel | io_uring/waitid.c | function parameter
+| |  |  | io_waitid_cancel | io_uring/waitid.h | function parameter
+|io_epoll | io_uring/epoll.c | epoll_event, file, int | io_epoll_ctl_prep | io_uring/epoll.c | local variable, function parameter
+| |  |  | io_epoll_ctl | io_uring/epoll.c | local variable,function parameter
+|io_epoll_wait | io_uring/epoll.c | __user, file, int | io_epoll_wait_prep | io_uring/epoll.c | local variable,function parameter
+| |  |  | io_epoll_wait | io_uring/epoll.c | local variable, function parameter
+|io_ev_fd | io_uring/eventfd.c | atomic_t, eventfd_ctx, int, rcu_head, refcount_t, unsigned | io_eventfd_free | io_uring/eventfd.c | local variable , function parameter
+| |  |  | io_eventfd_put | io_uring/eventfd.c | function parameter
+| |  |  | io_eventfd_do_signal | io_uring/eventfd.c | local variable, function parameter
+| |  |  | io_eventfd_release | io_uring/eventfd.c | function parameter
+| |  |  | __io_eventfd_signal | io_uring/eventfd.c | function parameter
+| |  |  | io_eventfd_trigger | io_uring/eventfd.c |  local variable
+| |  |  | io_eventfd_grab | io_uring/eventfd.c | function parameter, local variable
+| |  |  | io_eventfd_signal | io_uring/eventfd.c | local variable
+| |  |  | io_eventfd_flush_signal | io_uring/eventfd.c | local variable
+| |  |  | io_eventfd_register | io_uring/eventfd.c | local variable , function parameter
+| |  |  | io_eventfd_unregister | io_uring/eventfd.c | local variable , function parameter
+|io_rename | io_uring/fs.c | file, filename, int | io_renameat_prep | io_uring/fs.c | local variable, function parameter
+| |  |  | io_renameat | io_uring/fs.c | local variable, function parameter
+| |  |  | io_renameat_cleanup | io_uring/fs.c | local variable, function parameter
+|io_unlink | io_uring/fs.c | file, filename, int | io_unlinkat_prep | io_uring/fs.c | local variable, function paramter
+| |  |  | io_unlinkat | io_uring/fs.c | local variable, function paramter
+| |  |  | io_unlinkat_cleanup | io_uring/fs.c | local variable, function paramter
+|io_mkdir | io_uring/fs.c | file, filename, int, umode_t | io_mkdirat_prep | io_uring/fs.c | local variable, function paramter
+| |  |  | io_mkdirat | io_uring/fs.c | local variable, function paramter
+| |  |  | io_mkdirat_cleanup | io_uring/fs.c | local variable, function paramter
+|io_link | io_uring/fs.c | file, filename, int | io_symlinkat_prep | io_uring/fs.c | local variable, function paramter
+| |  |  | io_symlinkat | io_uring/fs.c | local variable, function paramter
+| |  |  | io_linkat_prep | io_uring/fs.c | local variable, function paramter
+| |  |  | io_linkat | io_uring/fs.c | local variable, function paramter
+| |  |  | io_link_cleanup | io_uring/fs.c | local variable, function paramter
+|io_futex | io_uring/futex.c | __user, file | io_futexv_complete | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futexv_claim | io_uring/futex.c | function parameter
+| |  |  | __io_futex_cancel | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futex_prep | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futex_wakev_fn | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futexv_prep | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futex_wake_fn | io_uring/futex.c | local variable ,  function parameter
+| |  |  | io_futexv_wait | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futex_wait | io_uring/futex.c | local variable , function parameter
+| |  |  | io_futex_wake | io_uring/futex.c | local variable , function parameter
+|io_futex_data | io_uring/futex.c | futex_q, io_kiocb | __io_futex_cancel | io_uring/futex.c | local variable
+| |  |  | io_futex_cache_init | io_uring/futex.c | function parameter
+| |  |  | io_futex_wake_fn | io_uring/futex.c | local variable, function parameter
+| |  |  | io_futex_wait | io_uring/futex.c | local variable
+|io_worker | io_uring/io-wq.c | callback_head, completion, delayed_work, hlist_nulls_node, int, io_wq, io_wq_acct, io_wq_work, list_head, long, raw_spinlock_t, rcu_head, refcount_t, task_struct | io_wq_dec_running | io_uring/io-wq.c | function parameter
+| |  |  | io_worker_get | io_uring/io-wq.c | function parameter
+| |  |  | io_worker_release | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_worker_stopped | io_uring/io-wq.c | local variable
+| |  |  | io_worker_cancel_cb | io_uring/io-wq.c | function parameter
+| |  |  | io_task_worker_match | io_uring/io-wq.c | local variable
+| |  |  | io_worker_exit | io_uring/io-wq.c | function parameter
+| |  |  | __io_acct_run_queue | io_uring/io-wq.c | local variable
+| |  |  | io_wq_inc_running | io_uring/io-wq.c | function parameter
+| |  |  | create_worker_cb | io_uring/io-wq.c | local variable
+| |  |  | io_queue_worker_create | io_uring/io-wq.c | function parameter
+| |  |  | __io_worker_busy | io_uring/io-wq.c | function parameter
+| |  |  | io_assign_current_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_worker | io_uring/io-wq.c | local variable
+| |  |  | io_wq_worker_running | io_uring/io-wq.c | local variable
+| |  |  | io_wq_worker_sleeping | io_uring/io-wq.c | local variable
+| |  |  | io_init_new_worker | io_uring/io-wq.c | function parameter
+| |  |  | io_should_retry_thread | io_uring/io-wq.c | function parameter
+| |  |  | queue_create_worker_retry | io_uring/io-wq.c | function parameter
+| |  |  | create_worker_cont | io_uring/io-wq.c | local variable
+| |  |  | io_workqueue_create | io_uring/io-wq.c | local variable
+| |  |  | create_io_worker | io_uring/io-wq.c | local variable
+| |  |  | io_wq_worker_wake | io_uring/io-wq.c | function parameter
+| |  |  | __io_wq_worker_cancel | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_worker_cancel | io_uring/io-wq.c | function parameter
+| |  |  | io_task_work_match | io_uring/io-wq.c | local variable
+| |  |  | io_wq_cancel_tw_create | io_uring/io-wq.c | local variable
+| |  |  | io_wq_worker_affinity | io_uring/io-wq.c | function parameter
+|io_wq_acct | io_uring/io-wq.c | atomic_t, hlist_nulls_head, io_wq_work_list, list_head, long, raw_spinlock_t, unsigned | create_io_worker | io_uring/io-wq.c | function parameter
+| |  |  | io_acct_cancel_pending_work | io_uring/io-wq.c | function parameter
+| |  |  | io_worker_cancel_cb | io_uring/io-wq.c | local variable
+| |  |  | io_worker_exit | io_uring/io-wq.c | local variable
+| |  |  | __io_acct_run_queue | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_create_worker | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_inc_running | io_uring/io-wq.c | local variable
+| |  |  | create_worker_cb | io_uring/io-wq.c | local variable
+| |  |  | io_queue_worker_create | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_dec_running | io_uring/io-wq.c | local variable
+| |  |  | __io_worker_busy | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_worker | io_uring/io-wq.c | local variable
+| |  |  | io_init_new_worker | io_uring/io-wq.c | function parameter
+| |  |  | create_worker_cont | io_uring/io-wq.c | local variable
+| |  |  | io_workqueue_create | io_uring/io-wq.c | local variable
+| |  |  | io_wq_insert_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_enqueue | io_uring/io-wq.c | local variable
+| |  |  | io_wq_remove_pending | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cancel_pending_work | io_uring/io-wq.c | local variable
+| |  |  | io_acct_cancel_running_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_hash_wake | io_uring/io-wq.c | local variable
+| |  |  | io_wq_max_workers | io_uring/io-wq.c | local variable
+|io_wq | io_uring/io-wq.c | atomic_t, completion, cpumask_var_t, free_work_fn, hlist_node, io_wq_hash, io_wq_work_fn, long, task_struct, wait_queue_entry | create_io_worker | io_uring/io-wq.c | function parameter
+| |  |  | io_acct_cancel_pending_work | io_uring/io-wq.c | function parameter, local variable
+| |  |  | io_wq_cancel_tw_create | io_uring/io-wq.c | function parameter
+| |  |  | io_worker_ref_put | io_uring/io-wq.c | function parameter
+| |  |  | io_worker_cancel_cb | io_uring/io-wq.c | local variable
+| |  |  | io_worker_exit | io_uring/io-wq.c | local variable
+| |  |  | io_wq_create_worker | io_uring/io-wq.c | function parameter
+| |  |  | create_worker_cb | io_uring/io-wq.c | local variable
+| |  |  | io_queue_worker_create | io_uring/io-wq.c | local variable
+| |  |  | io_wq_dec_running | io_uring/io-wq.c | local variable
+| |  |  | io_wait_on_hash | io_uring/io-wq.c | function parameter
+| |  |  | wq_list_for_each | io_uring/io-wq.c | local variable
+| |  |  | io_assign_current_work | io_uring/io-wq.c | local variable
+| |  |  | io_wq_worker | io_uring/io-wq.c | local variable
+| |  |  | io_init_new_worker | io_uring/io-wq.c | function parameter
+| |  |  | create_worker_cont | io_uring/io-wq.c | local variable
+| |  |  | io_run_cancel | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_insert_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_enqueue | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_enqueue | io_uring/io-wq.h | function parameter
+| |  |  | io_wq_remove_pending | io_uring/io-wq.c | function parameter, local variable
+| |  |  | io_wq_cancel_pending_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cancel_running_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cancel_cb | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cancel_cb | io_uring/io-wq.h | function parameter
+| |  |  | io_wq_hash_wake | io_uring/io-wq.c | local variable
+| |  |  | io_wq_exit_start | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_exit_start | io_uring/io-wq.h | function parameter
+| |  |  | io_wq_exit_workers | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_destroy | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_put_and_exit | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_put_and_exit | io_uring/io-wq.h | function parameter
+| |  |  | __io_wq_cpu_online | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cpu_online | io_uring/io-wq.c | local variable
+| |  |  | io_wq_cpu_offline | io_uring/io-wq.c | local variable
+| |  |  | io_wq_max_workers | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_max_workers | io_uring/io-wq.h | function parameter
+| |  |  | wq_list_del | io_uring/slist.h | local variable
+| |  |  | io_uring_clean_tctx | io_uring/tctx.c | local variable
+|io_cb_cancel_data | io_uring/io-wq.c | bool, int, void, work_cancel_fn | io_acct_cancel_pending_work | io_uring/io-wq.c | function parameter
+| |  |  | if | io_uring/io-wq.c | local variable
+| |  |  | io_wq_enqueue | io_uring/io-wq.c | local variable
+| |  |  | __io_wq_worker_cancel | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_worker_cancel | io_uring/io-wq.c | local variable
+| |  |  | io_wq_cancel_pending_work | io_uring/io-wq.c | function parameter
+| |  |  | io_acct_cancel_running_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cancel_running_work | io_uring/io-wq.c | function parameter
+| |  |  | io_wq_cancel_cb | io_uring/io-wq.c | local variable
+| |  |  | io_wq_destroy | io_uring/io-wq.c | local variable
+|online_data | io_uring/io-wq.c | bool, int | io_wq_worker_affinity | io_uring/io-wq.c | local variable
+| |  |  | __io_wq_cpu_online | io_uring/io-wq.c | local variable
+|io_wq_hash | io_uring/io-wq.h | long, refcount_t, wait_queue_head | io_wq_put_hash | io_uring/io-wq.h | function parameter, local variable
+|io_defer_entry | io_uring/io_uring.c | io_kiocb, list_head, u32 | io_queue_deferred | io_uring/io_uring.c | local variable
+| |  |  | io_get_sequence | io_uring/io_uring.c | local variable
+| |  |  | io_cancel_defer_files | io_uring/io_uring.c | local variable
+|ext_arg | io_uring/io_uring.c | __user, bool, ktime_t, size_t, timespec64 | __io_cqring_wait_schedule | io_uring/io_uring.c | function parameter
+| |  |  | io_cqring_wait_schedule | io_uring/io_uring.c | function parameter
+| |  |  | io_cqring_wait | io_uring/io_uring.c | function parameter
+| |  |  | io_get_ext_arg | io_uring/io_uring.c | function parameter
+| |  |  | if | io_uring/io_uring.c | local variable
+|io_tctx_exit | io_uring/io_uring.c | callback_head, completion, io_ring_ctx | io_tctx_exit_cb | io_uring/io_uring.c | local variable
+| |  |  | io_ring_exit_work | io_uring/io_uring.c | local variable
+|io_task_cancel | io_uring/io_uring.c | bool, io_uring_task | io_cancel_task_cb | io_uring/io_uring.c | local variable
+| |  |  | io_uring_try_cancel_requests | io_uring/io_uring.c | local variable
+|io_wait_queue | io_uring/io_uring.h | bool, hrtimer, int, io_ring_ctx, ktime_t, unsigned, wait_queue_entry | io_should_wake | io_uring/io_uring.h | function parameter
+| |  |  | io_napi_busy_loop_should_end | io_uring/napi.c | local variable
+| |  |  | io_napi_blocking_busy_loop | io_uring/napi.c | function parameter
+| |  |  | __io_napi_busy_loop | io_uring/napi.c | function parameter
+| |  |  | __io_napi_busy_loop | io_uring/napi.h | function parameter
+| |  |  | io_napi_busy_loop | io_uring/napi.h | function parameter
 | io_ev_fd                 | io_uring/eventfd.c   | eventfd_ctx, uint, uint, refcount_t, atomic_t, rcu_head                                                                                                           | io_eventfd_free                  | io_uring/eventfd.c   | local variable                     |
 |                          |                      |                                                                                                                                                                   | io_eventfd_put                   | io_uring/eventfd.c   | function parameter                 |
 |                          |                      |                                                                                                                                                                   | io_eventfd_do_signal             | io_uring/eventfd.c   | local variable, function parameter |
